@@ -3,6 +3,14 @@
    version = "1.0">
    <ContextStates>
       <ContextState
+         contextName = "GameViewController.viewDidLoad():GameViewController.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "mtkView.drawableSize">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "GameViewController.sayHello():GameViewController.swift">
          <PersistentStrings>
             <PersistentString

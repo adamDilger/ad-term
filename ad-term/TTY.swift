@@ -27,7 +27,7 @@ class TTY {
         var masterFD = Int32(-1)
         var slaveFD = Int32(-1)
         
-        var ws = winsize(ws_row: 40, ws_col: 100, ws_xpixel: 1000, ws_ypixel: 1000)
+        var ws = winsize(ws_row: UInt16(HEIGHT), ws_col: UInt16(WIDTH), ws_xpixel: 1000, ws_ypixel: 1000)
         
         guard openpty(&masterFD, &slaveFD, &temp, nil, &ws) != -1 else {
             fatalError("failed to open pty")
@@ -37,7 +37,7 @@ class TTY {
         self.slaveFile = FileHandle.init(fileDescriptor: slaveFD)
         
         self.task!.executableURL = URL(fileURLWithPath: "/bin/bash")
-        self.task!.arguments = ["-i"]
+        self.task!.arguments = ["-i"]; //, "-c"]; , "vi ~/.bashrc"]
         self.task!.standardOutput = slaveFile
         self.task!.standardInput = slaveFile
         self.task!.standardError = slaveFile
@@ -48,19 +48,19 @@ class TTY {
     }
     
     func run() {
-//        let tmp = FileHandle.init(forUpdatingAtPath: "/Users/adamdilger/helloworld.txt");
+        let tmp = FileHandle.init(forUpdatingAtPath: "/Users/adamdilger/helloworld.txt");
         
         self.masterFile!.readabilityHandler = { handler in
             let cur = self.terminal.buffer.count
              
             let data = handler.availableData;
             
-            // tmp!.write(data);
-//            do {
-//                try tmp!.synchronize()
-//            } catch {
-//                print(error);
-//            }
+            tmp!.write(data);
+            do {
+                try tmp!.synchronize()
+            } catch {
+                print(error);
+            }
             
             // print(String(decoding: data, as: UTF8.self))
             

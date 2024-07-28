@@ -40,10 +40,12 @@ fragment float4 fragmentFunction(VertexOut in [[stage_in]], texture2d<float> fon
 
     float4 color = fontTexture.sample(colorSampler, in.texCoord);
     
-    if (color.a > 0.5) {
-        return float4(in.fgColor[0], in.fgColor[1], in.fgColor[2], 1);
-    }
+    return float4((1-color.a) * in.bgColor + color.rgb * in.fgColor, 1);
     
-    // return float4(color.rgb, 1.0);
-    return float4(in.bgColor[0], in.bgColor[1], in.bgColor[2], 1);
+//    if (color.a > 0.5) {
+//        return float4(in.fgColor[0], in.fgColor[1], in.fgColor[2], 1);
+//    }
+//    
+//    // return float4(color.rgb, 1.0);
+//    return float4(in.bgColor[0], in.bgColor[1], in.bgColor[2], 1);
 }

@@ -58,7 +58,7 @@ func GenerateGlyph(texture: MTLTexture, char: Character) {
 //let device = MTLCreateSystemDefaultDevice()!
 //let texture = device.makeTexture(descriptor: textureDescriptor)!
 
-let font = CTFontCreateWithName("Menlo" as CFString, 20, nil)
+let font = CTFontCreateWithName("Menlo" as CFString, 30, nil)
 let fontSize = getFontSize()
 let fontWidth = Int(fontSize.width)
 let fontHeight = Int(fontSize.height)

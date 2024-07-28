@@ -12,6 +12,11 @@ let backspace = Character("\u{8}").asciiValue!;
 let newline = Character("\n").asciiValue!;
 let carriagereturn = Character("\r").asciiValue!;
 
+let ASC_A = Character("A").asciiValue!;
+let ASC_B = Character("B").asciiValue!;
+let ASC_C = Character("C").asciiValue!;
+let ASC_D = Character("D").asciiValue!;
+
 let ASC_J = Character("J").asciiValue!;
 let ASC_K = Character("K").asciiValue!;
 let ASC_L = Character("L").asciiValue!;

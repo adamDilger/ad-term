@@ -7,8 +7,8 @@
 
 import Foundation
 
-let WIDTH = 100;
-let HEIGHT = 40;
+var WIDTH = 80;
+var HEIGHT = 24;
 
 struct Cell {
     var char: Character?;
@@ -47,15 +47,23 @@ class Terminal {
         self.tty = TTY(self);
     }
     
+    func clearCell(cell: inout Cell) {
+        cell.char = nil;
+        cell.bgColor = 40
+        cell.fgColor = 37
+        cell.inverted = false
+    }
+    
     func clearRow(y: Int) {
         let adjustedY = getAdjustedY(y: y);
-        // //print("Clearing Row: cu: [\(self.currentLineIndex)] | \(y) : \(adjustedY)")
+        // print("Clearing Row: cu: [\(self.currentLineIndex)] | \(y) : \(adjustedY)")
         
         for i in (WIDTH*adjustedY)..<(WIDTH*(adjustedY+1)) {
-            self.cells[i].char = nil;
-            self.cells[i].bgColor = 40
-            self.cells[i].fgColor = 37
-            self.cells[i].inverted = false
+            clearCell(cell: &self.cells[i])
+//            self.cells[i].char = nil;
+//            self.cells[i].bgColor = 40
+//            self.cells[i].fgColor = 37
+//            self.cells[i].inverted = false
         }
     }
 
@@ -65,21 +73,24 @@ class Terminal {
     }
     
     func draw() {
+        print("--------------------------------------------------------------------")
         var x = 0;
         var y = 0;
         self.fgColor = 37
         self.bgColor = 30
         self.currentLineIndex = 0;
         
-        for i in 0..<HEIGHT {
-            self.clearRow(y: i) // needed?
-        }
+//        for i in 0..<HEIGHT {
+//            self.clearRow(y: i) // needed?
+//        }
         
+        var lc = 0;
         for line in self.lines {
+            lc += 1;
             let s = line.start;
             let e = line.end;
             
-            // //print(String(decoding: data[s..<e], as: UTF8.self))
+            // print(String(decoding: data[s..<e], as: UTF8.self))
             
             var idx = s;
             while idx < e {
@@ -87,7 +98,8 @@ class Terminal {
                 let bc = Character(UnicodeScalar(b))
                 
                 if b == ASC_ESC {
-                    let peek = self.buffer[idx + 1];
+                    let peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                    
                     if peek == ASC_L_SQUARE {
                         idx += 1;
                         self.readControlCode(idx: &idx, x: &x, y: &y);
@@ -114,11 +126,13 @@ class Terminal {
                         }
                         
                         idx += 1 // skip over peeks
-                        // //print("TODO: [");
+                        // print("TODO: [");
                     } else {
                         idx += 1;
-                        //print("UNKNOWN ESCAPE CHAR: \(Character(UnicodeScalar(self.buffer[idx])))")
+                        print("UNKNOWN ESCAPE CHAR: \(Character(UnicodeScalar(self.buffer[idx])))")
                     }
+                } else if b == ASC_BELL {
+                    print("BELL");
                 } else if b == newline {
                     x = 0; // TODO: needed?
                     self.newLine(y: &y);
@@ -180,8 +194,6 @@ class Terminal {
             // y has stayed the same, but we need to shift all values up one
             self.currentLineIndex += 1;
         }
-        
-        self.clearRow(y: y);
     }
     
     func readControlCode(idx: inout Int, x: inout Int, y: inout Int) {
@@ -226,7 +238,15 @@ class Terminal {
             }
         }
         
-        if peek == ASC_h {
+        if peek == ASC_C {
+            idx += 1;
+
+            // move cursor right
+            var n: UInt16 = 1;
+            if numbers.count > 0 && numbers[0] != 0 { n = numbers[0] }
+            
+            x += Int(n)
+        } else if peek == ASC_h {
             idx += 1;
             
             var n: UInt16 = 1;
@@ -244,9 +264,9 @@ class Terminal {
                 y = 0;
                 self.currentLineIndex = 0;
                 
-                //print("Alternate Buffer: ON")
+                print("Alternate Buffer: ON")
             } else {
-                //print("\(questionMark ? "?" : "")\(n)h")
+                print("\(questionMark ? "?" : "")\(n)h")
             }
         } else if peek == ASC_l {
             idx += 1;
@@ -262,7 +282,7 @@ class Terminal {
                 
                 self.currentLineIndex = self.alternateCurrentLineIndex;
                 self.alternateCurrentLineIndex = 0;
-                //print("Alternate Buffer: OFF")
+                print("Alternate Buffer: OFF")
             }
         } else if peek == ASC_K {
             idx += 1
@@ -273,17 +293,18 @@ class Terminal {
             let ay = getAdjustedY(y: y)
             
             if n == 0 {
-                //print("[\(n)K -- \(x) to WIDTH")
+                print("[\(n)K -- y: \(ay) | x: \(x) to WIDTH")
                 // If n is 0 (or missing), clear from cursor to the end of the line.
-                for c in x..<WIDTH { self.cells[c + (ay * WIDTH)].char = nil }
+                // for c in x..<WIDTH { self.cells[c + (ay * WIDTH)].char = nil }
+                for c in x..<WIDTH { clearCell(cell: &self.cells[c + (ay * WIDTH)]) }
             } else if n == 1 {
-                //print("[\(n)K -- 0 to \(x)")
+                print("[\(n)K -- 0 to \(x)")
                 // If n is 1, clear from cursor to beginning of the line.
-                for c in 0..<idx { self.cells[c + (ay * WIDTH)].char = nil }
+                for c in 0..<idx { clearCell(cell: &self.cells[c + (ay * WIDTH)]) }
             } else {
-                //print("[\(n)K -- CLEAR")
+                print("[\(n)K -- CLEAR")
                 // If n is 2, clear entire line. Cursor position does not change.
-                for c in 0..<WIDTH { self.cells[c + (ay * WIDTH)].char = nil }
+                for c in 0..<WIDTH { clearCell(cell: &self.cells[c + (ay * WIDTH)]) }
             }
         } else if peek == ASC_H {
             idx += 1;
@@ -294,7 +315,7 @@ class Terminal {
             var m: UInt16 = 1;
             if numbers.count > 1 && numbers[1] != 0 { m = numbers[1] }
             
-            //print("\(n);\(m)H")
+            print("\(n);\(m)H")
             
             x = Int(m) - 1;
             y = Int(n) - 1;
@@ -306,20 +327,20 @@ class Terminal {
             var n: UInt16 = 0;
             if numbers.count > 0 { n = numbers[0] }
             
-            // //print("\(n)J")
+            // print("\(n)J")
             if n == 0 {
                 // If n is 0 (or missing), clear from cursor to end of screen.
-                //print("TODO: // [0J")
+                print("TODO: // [0J")
             } else if n == 1 {
                 // If n is 1, clear from cursor to beginning of the screen.
-                //print("TODO: // [1J")
+                print("TODO: // [1J")
             } else  {
                 // If n is 2, clear entire screen
                 // If n is 3, clear entire screen and delete all lines saved in the scrollback buffer
-                //print("TODO: // [\(n)J")
+                print("TODO: // [\(n)J")
                 
                 for i in 0..<WIDTH*HEIGHT {
-                    self.cells[i].char = nil;
+                    clearCell(cell: &self.cells[i]);
                 }
             }
         } else if peek == ASC_m && numbers.count > 1 {
@@ -328,7 +349,7 @@ class Terminal {
             let n = numbers[0]
             let m = numbers[1]
             
-            //print("TODO: [\(n);\(m)m")
+            print("TODO: [\(n);\(m)m")
         } else if peek == ASC_m {
             idx += 1;
             
@@ -374,7 +395,7 @@ class Terminal {
             var m: UInt16 = 0;
             if numbers.count > 1 { m = numbers[1] }
             
-            //print("TODO: [\(n);\(m)r")
+            print("TODO: [\(n);\(m)r")
         } else if peek == ASC_t {
             idx += 1;
             
@@ -384,7 +405,11 @@ class Terminal {
             var m: UInt16 = 0;
             if numbers.count > 1 { m = numbers[1] }
             
-            //print("TODO: [\(n);\(m)t")
+            var o: UInt16 = 0;
+            if numbers.count > 1 { o = numbers[1] }
+
+            
+            print("TODO: [\(n);\(m);\(o)t")
         } else if peek == ASC_L {
             idx += 1;
             var n: UInt16 = 1;
@@ -395,7 +420,7 @@ class Terminal {
             }
         } else {
             idx += 1;
-            //print("----- UNKNOWN CSI: [\(Character(UnicodeScalar(self.buffer[idx])))")
+            print("----- UNKNOWN CSI: [\(Character(UnicodeScalar(self.buffer[idx])))")
         }
     }
 }

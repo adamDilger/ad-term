@@ -147,6 +147,13 @@ class Renderer: NSObject, MTKViewDelegate {
     }
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+        var _a = size.width / CGFloat(fontWidth);
+        var _b = size.height / CGFloat(fontHeight);
+        var _c = Int(floor(_a))
+        var _d = Int(floor(_b))
+
+        print("new WIDTH \(_c)");
+        print("new HEIGHT \(_d)");
     }
     
     func tick(_ cells: inout [Cell], offsetIndex: Int) {
