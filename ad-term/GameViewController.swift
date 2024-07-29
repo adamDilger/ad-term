@@ -46,10 +46,10 @@ class GameViewController: NSViewController {
 
         mtkView.device = defaultDevice
 
-        var _a = mtkView.drawableSize.width / CGFloat(fontWidth);
-        var _b = mtkView.drawableSize.height / CGFloat(fontHeight);
-        var _c = Int(floor(_a))
-        var _d = Int(floor(_b))
+        let _a = mtkView.drawableSize.width / CGFloat(fontWidth);
+        let _b = mtkView.drawableSize.height / CGFloat(fontHeight);
+        let _c = Int(floor(_a))
+        let _d = Int(floor(_b))
 
         WIDTH = _c;
         HEIGHT = _d;
@@ -72,7 +72,7 @@ class GameViewController: NSViewController {
     
     @objc func terminalDataUpdate(_ notification: Notification) {
         if renderer == nil { return; }
-        renderer.tick(&self.terminal!.cells, offsetIndex: self.terminal!.currentLineIndex);
+        renderer.tick(terminal: self.terminal!);
     }
     
     override func keyDown(with event: NSEvent) {

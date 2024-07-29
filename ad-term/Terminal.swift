@@ -22,6 +22,11 @@ struct line {
     var end: Int;
 }
 
+struct point {
+    var x: Int
+    var y: Int
+}
+
 class Terminal {
     var tty: TTY?;
     var cells = Array<Cell>();
@@ -36,6 +41,8 @@ class Terminal {
     var alternateX = 0;
     var alternateY = 0;
 
+    var cursor = point(x: 0, y: 0)
+    
     var buffer: Data
     var lines: Array<line>;
     
@@ -55,11 +62,11 @@ class Terminal {
     }
     
     func clearRow(y: Int) {
-        let adjustedY = getAdjustedY(y: y);
+        let adjustedY = self.getAdjustedY(y: y);
         // print("Clearing Row: cu: [\(self.currentLineIndex)] | \(y) : \(adjustedY)")
         
         for i in (WIDTH*adjustedY)..<(WIDTH*(adjustedY+1)) {
-            clearCell(cell: &self.cells[i])
+            self.clearCell(cell: &self.cells[i])
 //            self.cells[i].char = nil;
 //            self.cells[i].bgColor = 40
 //            self.cells[i].fgColor = 37
@@ -74,8 +81,8 @@ class Terminal {
     
     func draw() {
         print("--------------------------------------------------------------------")
-        var x = 0;
-        var y = 0;
+        self.cursor.x = 0;
+        self.cursor.y = 0;
         self.fgColor = 37
         self.bgColor = 30
         self.currentLineIndex = 0;
@@ -102,7 +109,7 @@ class Terminal {
                     
                     if peek == ASC_L_SQUARE {
                         idx += 1;
-                        self.readControlCode(idx: &idx, x: &x, y: &y);
+                        self.readControlCode(idx: &idx);
                     } else if peek == ASC_P {
                         // xterm doesn't do anything with these... so ignore?
                         idx += 1
@@ -134,16 +141,16 @@ class Terminal {
                 } else if b == ASC_BELL {
                     print("BELL");
                 } else if b == newline {
-                    x = 0; // TODO: needed?
-                    self.newLine(y: &y);
+                    cursor.x = 0; // TODO: needed?
+                    self.newLine();
                 } else if b == carriagereturn {
-                    x = 0;
+                    cursor.x = 0;
                 } else if b == backspace {
-                    x -= 1;
+                    cursor.x -= 1;
                 } else {
-                    let ay = self.getAdjustedY(y: y);
+                    let ay = self.getAdjustedY(y: cursor.y);
                     
-                    var cellIndex = x + (ay * WIDTH)
+                    var cellIndex = cursor.x + (ay * WIDTH)
                     
                     if bc == "\t" {
                         // insert tab chars to next multiple of 8
@@ -152,24 +159,24 @@ class Terminal {
                             self.cells[cellIndex].bgColor = bgColor
                             self.cells[cellIndex].fgColor = fgColor
                             self.cells[cellIndex].inverted = inverted
-                            if x + 1 == WIDTH {
+                            if cursor.x + 1 == WIDTH {
                                 break;
                             }
-                            x += 1;
+                            cursor.x += 1;
                             cellIndex += 1;
-                        } while (x % 8 != 0)
+                        } while (cursor.x % 8 != 0)
                     } else {
                         self.cells[cellIndex].bgColor = bgColor
                         self.cells[cellIndex].fgColor = fgColor
                         self.cells[cellIndex].inverted = inverted
                         self.cells[cellIndex].char = bc
                         
-                        if x + 1 == WIDTH {
-                            x = 0;
+                        if cursor.x + 1 == WIDTH {
+                            cursor.x = 0;
                             
-                            self.newLine(y: &y);
+                            self.newLine();
                         } else {
-                            x += 1;
+                            cursor.x += 1;
                         }
                     }
                 }
@@ -178,25 +185,26 @@ class Terminal {
             }
         }
         
-        let ay = self.getAdjustedY(y: y);
-        self.cells[x + (ay * WIDTH)].inverted = true
-        
         let nc = NotificationCenter.default
         nc.post(name: Notification.Name("TerminalDataUpdate"), object: nil)
     }
     
-    func newLine(y: inout Int) {
-        if y + 1 < HEIGHT {
+    func newLine() {
+        if self.cursor.y + 1 < HEIGHT {
             // we're at the bottom of the grid, so don't "move down"
             // everything will shift up instead
-            y += 1;
+            self.cursor.y += 1;
         } else {
             // y has stayed the same, but we need to shift all values up one
             self.currentLineIndex += 1;
+            
+            /// TODO: check whether this is correct. I think the row needs to be cleared as it is "new"
+            /// whereas above the row would already exist
+            self.clearRow(y: self.cursor.y)
         }
     }
     
-    func readControlCode(idx: inout Int, x: inout Int, y: inout Int) {
+    func readControlCode(idx: inout Int) {
         var peek: UInt8? = self.buffer[idx + 1];
         
         var questionMark = false;
@@ -245,7 +253,7 @@ class Terminal {
             var n: UInt16 = 1;
             if numbers.count > 0 && numbers[0] != 0 { n = numbers[0] }
             
-            x += Int(n)
+            cursor.x += Int(n)
         } else if peek == ASC_h {
             idx += 1;
             
@@ -254,14 +262,14 @@ class Terminal {
             
             if n == 1049 {
                 self.alternateCells = self.cells;
-                self.alternateX = x;
-                self.alternateY = y;
+                self.alternateX = cursor.x;
+                self.alternateY = cursor.y;
                 self.alternateCurrentLineIndex = self.currentLineIndex;
                 
                 self.cells = Array();
                 for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
-                x = 0;
-                y = 0;
+                cursor.x = 0;
+                cursor.y = 0;
                 self.currentLineIndex = 0;
                 
                 print("Alternate Buffer: ON")
@@ -277,8 +285,8 @@ class Terminal {
             if n == 1049 {
                 self.cells = self.alternateCells;
                 self.alternateCells = Array();
-                x = self.alternateX;
-                y = self.alternateY;
+                cursor.x = self.alternateX;
+                cursor.y = self.alternateY;
                 
                 self.currentLineIndex = self.alternateCurrentLineIndex;
                 self.alternateCurrentLineIndex = 0;
@@ -290,15 +298,15 @@ class Terminal {
             var n: UInt16 = 0;
             if numbers.count > 0 && numbers[0] != 0 { n = numbers[0] }
             
-            let ay = getAdjustedY(y: y)
+            let ay = getAdjustedY(y: cursor.y)
             
             if n == 0 {
-                print("[\(n)K -- y: \(ay) | x: \(x) to WIDTH")
+                print("[\(n)K -- y: \(ay) | x: \(cursor.x) to WIDTH")
                 // If n is 0 (or missing), clear from cursor to the end of the line.
                 // for c in x..<WIDTH { self.cells[c + (ay * WIDTH)].char = nil }
-                for c in x..<WIDTH { clearCell(cell: &self.cells[c + (ay * WIDTH)]) }
+                for c in cursor.x..<WIDTH { clearCell(cell: &self.cells[c + (ay * WIDTH)]) }
             } else if n == 1 {
-                print("[\(n)K -- 0 to \(x)")
+                print("[\(n)K -- 0 to \(cursor.x)")
                 // If n is 1, clear from cursor to beginning of the line.
                 for c in 0..<idx { clearCell(cell: &self.cells[c + (ay * WIDTH)]) }
             } else {
@@ -317,8 +325,8 @@ class Terminal {
             
             print("\(n);\(m)H")
             
-            x = Int(m) - 1;
-            y = Int(n) - 1;
+            cursor.x = Int(m) - 1;
+            cursor.y = Int(n) - 1;
             
             // self.currentLineIndex = y;
         } else if peek == ASC_J {
@@ -416,7 +424,7 @@ class Terminal {
             if numbers.count > 0 { n = numbers[0] }
             
             for _ in 0..<n {
-                self.newLine(y: &y)
+                self.newLine()
             }
         } else {
             idx += 1;

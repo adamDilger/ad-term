@@ -85,7 +85,7 @@ class Renderer: NSObject, MTKViewDelegate {
         
         self.vertices = []
         self.indices = []
-        fill(&self.vertices, &self.indices, &cells, offsetIndex: 0);
+        fill(&self.vertices, &self.indices, &cells, offsetIndex: 0, cursor: point(x: 0, y: 0));
         
         self.vertexBuffer = self.device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride, options: MTLResourceOptions.storageModeShared)!
         self.indexBuffer = self.device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<ushort>.stride, options: MTLResourceOptions.storageModeShared)!
@@ -147,33 +147,36 @@ class Renderer: NSObject, MTKViewDelegate {
     }
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        var _a = size.width / CGFloat(fontWidth);
-        var _b = size.height / CGFloat(fontHeight);
-        var _c = Int(floor(_a))
-        var _d = Int(floor(_b))
+        let _a = size.width / CGFloat(fontWidth);
+        let _b = size.height / CGFloat(fontHeight);
+        let _c = Int(floor(_a))
+        let _d = Int(floor(_b))
 
         print("new WIDTH \(_c)");
         print("new HEIGHT \(_d)");
     }
     
-    func tick(_ cells: inout [Cell], offsetIndex: Int) {
-        self.helloworld += 1;
+    func tick(terminal: Terminal) {
         self.vertices = [];
         self.indices = [];
-        fill(&self.vertices, &self.indices, &cells, offsetIndex: offsetIndex);
+        fill(&self.vertices, &self.indices, &terminal.cells, offsetIndex: terminal.currentLineIndex, cursor: terminal.cursor);
         self.vertexBuffer.contents().copyMemory(from: &self.vertices, byteCount: vertices.count * MemoryLayout<Vertex>.stride)
     }
 }
     
 let H: Float = 16
 let W: Float = 16
-func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout [Cell], offsetIndex: Int) {
+func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout [Cell], offsetIndex: Int, cursor: point) {
     let lineOffset = offsetIndex % HEIGHT;
     let offset = lineOffset * WIDTH;
     
     for i in 0..<HEIGHT {
+        let cursorInRow = cursor.y == i;
+        
         let iOffset = (i * WIDTH)
         for j in 0..<WIDTH {
+            let isCursor = cursorInRow && cursor.x == j;
+            
             let idx = (j + offset + iOffset) % cells.count;
             let cell = cells[idx];
             
@@ -202,7 +205,7 @@ func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout 
             var bgColor = colours[cell.bgColor ?? 40] ?? Black
             var fgColor = colours[cell.fgColor ?? 37] ?? White
             
-            if cell.inverted {
+            if cell.inverted || isCursor {
                 let tmp = bgColor;
                 bgColor = fgColor;
                 fgColor = tmp;
