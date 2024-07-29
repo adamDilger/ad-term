@@ -85,7 +85,7 @@ class Renderer: NSObject, MTKViewDelegate {
         
         self.vertices = []
         self.indices = []
-        fill(&self.vertices, &self.indices, &cells, offsetIndex: 0, cursor: point(x: 0, y: 0));
+        fill(&self.vertices, &self.indices, &cells, cursor: point(x: 0, y: 0));
         
         self.vertexBuffer = self.device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride, options: MTLResourceOptions.storageModeShared)!
         self.indexBuffer = self.device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<ushort>.stride, options: MTLResourceOptions.storageModeShared)!
@@ -159,17 +159,14 @@ class Renderer: NSObject, MTKViewDelegate {
     func tick(terminal: Terminal) {
         self.vertices = [];
         self.indices = [];
-        fill(&self.vertices, &self.indices, &terminal.cells, offsetIndex: terminal.currentLineIndex, cursor: terminal.cursor);
+        fill(&self.vertices, &self.indices, &terminal.cells, cursor: terminal.cursor);
         self.vertexBuffer.contents().copyMemory(from: &self.vertices, byteCount: vertices.count * MemoryLayout<Vertex>.stride)
     }
 }
     
 let H: Float = 16
 let W: Float = 16
-func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout [Cell], offsetIndex: Int, cursor: point) {
-    let lineOffset = offsetIndex % HEIGHT;
-    let offset = lineOffset * WIDTH;
-    
+func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout [Cell], cursor: point) {
     for i in 0..<HEIGHT {
         let cursorInRow = cursor.y == i;
         
@@ -177,7 +174,7 @@ func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout 
         for j in 0..<WIDTH {
             let isCursor = cursorInRow && cursor.x == j;
             
-            let idx = (j + offset + iOffset) % cells.count;
+            let idx = (j + iOffset) % cells.count;
             let cell = cells[idx];
             
             let v_idx: UInt16 = UInt16(idx * 4)

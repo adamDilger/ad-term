@@ -11,6 +11,17 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "Terminal.newLine():Terminal.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "cells.endIndex">
+            </PersistentString>
+            <PersistentString
+               value = "cells.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "GameViewController.sayHello():GameViewController.swift">
          <PersistentStrings>
             <PersistentString
