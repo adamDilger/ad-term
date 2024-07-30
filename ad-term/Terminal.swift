@@ -41,6 +41,8 @@ class Terminal {
 
     var cursor = point(x: 0, y: 0)
     
+    var currentLineBufferIndex = 0;
+    
     var buffer: Data
     var lines: Array<line>;
     
@@ -67,107 +69,101 @@ class Terminal {
 
     func draw() {
         print("--------------------------------------------------------------------")
-        self.cursor.x = 0;
-        self.cursor.y = HEIGHT - 1;
-        self.fgColor = 37
-        self.bgColor = 30
+//        self.cursor.x = 0;
+//        self.cursor.y = HEIGHT - 1;
+//        self.fgColor = 37
+//        self.bgColor = 30
         
-        for i in 0..<HEIGHT {
-            self.clearRow(y: i) // needed?
-        }
+//        for i in 0..<HEIGHT {
+//            self.clearRow(y: i) // needed?
+//        }
         
-        var lc = 0;
-        for line in self.lines {
-            lc += 1;
-            let s = line.start;
-            let e = line.end;
-            
+        var idx = currentLineBufferIndex;
+        while idx < self.buffer.count {
             // print(String(decoding: data[s..<e], as: UTF8.self))
+            let b = self.buffer[idx];
+            let bc = Character(UnicodeScalar(b))
             
-            var idx = s;
-            while idx < e {
-                let b = self.buffer[idx];
-                let bc = Character(UnicodeScalar(b))
+            if b == ASC_ESC {
+                let peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
                 
-                if b == ASC_ESC {
-                    let peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                if peek == ASC_L_SQUARE {
+                    idx += 1;
+                    self.readControlCode(idx: &idx);
+                } else if peek == ASC_P {
+                    // xterm doesn't do anything with these... so ignore?
+                    idx += 1
+                    var p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                    var p2 = idx + 2 < self.buffer.count ? self.buffer[idx + 2] : nil;
                     
-                    if peek == ASC_L_SQUARE {
-                        idx += 1;
-                        self.readControlCode(idx: &idx);
-                    } else if peek == ASC_P {
-                        // xterm doesn't do anything with these... so ignore?
+                    while !(p1 == ASC_ESC && p2 == ASC_BACKSLASH) {
                         idx += 1
-                        var p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
-                        var p2 = idx + 2 < self.buffer.count ? self.buffer[idx + 2] : nil;
-                        
-                        while !(p1 == ASC_ESC && p2 == ASC_BACKSLASH) {
-                            idx += 1
-                            p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
-                            p2 = idx + 2 < self.buffer.count ? self.buffer[idx + 2] : nil;
-                        }
-                        
-                        idx += 2 // skip over peeks
-                    } else if peek == ASC_R_SQUARE {
-                        idx += 1
-                        var p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
-                        
-                        while p1 != ASC_BELL {
-                            idx += 1
-                            p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
-                        }
-                        
-                        idx += 1 // skip over peeks
-                        // print("TODO: [");
-                    } else {
-                        idx += 1;
-                        print("UNKNOWN ESCAPE CHAR: \(Character(UnicodeScalar(self.buffer[idx])))")
+                        p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                        p2 = idx + 2 < self.buffer.count ? self.buffer[idx + 2] : nil;
                     }
-                } else if b == ASC_BELL {
-                    print("BELL");
-                } else if b == newline {
-                    cursor.x = 0; // TODO: needed?
-                    self.newLine();
-                } else if b == carriagereturn {
-                    cursor.x = 0;
-                } else if b == backspace {
-                    cursor.x -= 1;
-                } else {
-                    var cellIndex = cursor.x + (cursor.y * WIDTH)
                     
-                    if bc == "\t" {
-                        // insert tab chars to next multiple of 8
-                        repeat {
-                            self.cells[cellIndex].char = " "
-                            self.cells[cellIndex].bgColor = bgColor
-                            self.cells[cellIndex].fgColor = fgColor
-                            self.cells[cellIndex].inverted = inverted
-                            if cursor.x + 1 == WIDTH {
-                                break;
-                            }
-                            cursor.x += 1;
-                            cellIndex += 1;
-                        } while (cursor.x % 8 != 0)
-                    } else {
+                    idx += 2 // skip over peeks
+                } else if peek == ASC_R_SQUARE {
+                    idx += 1
+                    var p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                    
+                    while p1 != ASC_BELL {
+                        idx += 1
+                        p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                    }
+                    
+                    idx += 1 // skip over peeks
+                    // print("TODO: [");
+                } else {
+                    idx += 1;
+                    print("UNKNOWN ESCAPE CHAR: \(Character(UnicodeScalar(self.buffer[idx])))")
+                }
+            } else if b == ASC_BELL {
+                print("BELL");
+            } else if b == newline {
+                cursor.x = 0; // TODO: needed?
+                self.newLine();
+            } else if b == carriagereturn {
+                cursor.x = 0;
+            } else if b == backspace {
+                cursor.x -= 1;
+            } else {
+                var cellIndex = cursor.x + (cursor.y * WIDTH)
+                
+                if bc == "\t" {
+                    // insert tab chars to next multiple of 8
+                    repeat {
+                        self.cells[cellIndex].char = " "
                         self.cells[cellIndex].bgColor = bgColor
                         self.cells[cellIndex].fgColor = fgColor
                         self.cells[cellIndex].inverted = inverted
-                        self.cells[cellIndex].char = bc
-                        
                         if cursor.x + 1 == WIDTH {
-                            cursor.x = 0;
-                            
-                            self.newLine();
-                        } else {
-                            cursor.x += 1;
+                            break;
                         }
+                        cursor.x += 1;
+                        cellIndex += 1;
+                    } while (cursor.x % 8 != 0)
+                } else {
+                    self.cells[cellIndex].bgColor = bgColor
+                    self.cells[cellIndex].fgColor = fgColor
+                    self.cells[cellIndex].inverted = inverted
+                    self.cells[cellIndex].char = bc
+                    
+                    if cursor.x + 1 == WIDTH {
+                        cursor.x = 0;
+                        
+                        self.newLine();
+                    } else {
+                        cursor.x += 1;
                     }
                 }
-                
-                idx += 1;
             }
+            
+            idx += 1;
         }
         
+        currentLineBufferIndex = self.buffer.count;
+
         let nc = NotificationCenter.default
         nc.post(name: Notification.Name("TerminalDataUpdate"), object: nil)
     }

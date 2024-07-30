@@ -65,23 +65,23 @@ class TTY {
             // print(String(decoding: data, as: UTF8.self))
             
             self.terminal.buffer.append(data)
-            let r = cur..<self.terminal.buffer.count;
+//            let r = cur..<self.terminal.buffer.count;
             
             // let a = String(decoding: self.buffer.subdata(in: r), as: UTF8.self)
             // print(a, terminator: "")
             
             // parse output to determine lines
 
-            for i in r {
-                self.terminal.lines[self.terminal.lines.count - 1].end += 1;
-                let b = self.terminal.buffer[i];
-                if (self.terminal.buffer[i] == newline) {
-                    self.newLine(at: i);
-                }
-                else if (b == backspace) {
-                    self.newLine(at: i);
-                }
-            }
+//            for i in r {
+//                self.terminal.lines[self.terminal.lines.count - 1].end += 1;
+//                let b = self.terminal.buffer[i];
+//                if (self.terminal.buffer[i] == newline) {
+//                    self.newLine(at: i);
+//                }
+//                else if (b == backspace) {
+//                    self.newLine(at: i);
+//                }
+//            }
             
             self.terminal.draw()
         }
