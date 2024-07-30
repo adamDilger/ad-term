@@ -46,10 +46,16 @@ class Terminal {
     var buffer: Data
     var lines: Array<line>;
     
+    var scrollTop: Int;
+    var scrollBottom: Int;
+    
     init() {
         self.buffer = Data()
         self.lines = [line(start: 0, end: 0)]
         for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
+        
+        self.scrollTop = 0;
+        self.scrollBottom = HEIGHT - 1;
         
         self.tty = TTY(self);
     }
@@ -90,6 +96,8 @@ class Terminal {
                 if peek == ASC_L_SQUARE {
                     idx += 1;
                     self.readControlCode(idx: &idx);
+                } else if peek == ASC_L {
+                    print("FUK")
                 } else if peek == ASC_P {
                     // xterm doesn't do anything with these... so ignore?
                     idx += 1
@@ -180,15 +188,38 @@ class Terminal {
         print(String(out) + "------------------------------------");
     }
     
+    func insertLine() {
+        // do logic
+    }
+
     func newLine() {
-        if self.cursor.y + 1 < HEIGHT {
+        // TODO: more bounds checking
+        if self.cursor.y + 1 <= self.scrollBottom {
             self.cursor.y += 1;
+        } else if self.cursor.y > self.scrollBottom && self.cursor.y + 1 == HEIGHT {
+            // do nothing
         } else {
             // we're at the bottom of the grid, so don't "move down"
             // everything will shift up instead
+
+            print(self.cells.count)
+            
+            
+            let a = self.cells[0 ..< (self.scrollTop * WIDTH)] // everything up until the scroll region, should be 0 for normal operation
+            let b = self.cells[((self.scrollTop + 1) * WIDTH) ..< ((self.scrollBottom) * WIDTH)] // scroll region start + 1 (as we're 'scrolling', so skip first line)
+            let c = self.cells[((self.scrollTop) * WIDTH) ..< ((self.scrollTop + 1) * WIDTH)] // first line of scroll region
+            let d = self.cells[((self.scrollBottom) * WIDTH)...] // the rest
+
             self.cells = Array(
-                self.cells[WIDTH ..< cells.endIndex] + self.cells[0 ..< WIDTH]
+                a
+                +
+                b
+                +
+                c
+                +
+                d
             )
+            print(self.cells.count)
 
             self.clearRow(y: self.cursor.y)
         }
@@ -277,6 +308,8 @@ class Terminal {
                 cursor.y = self.alternateY;
                 
                 print("Alternate Buffer: OFF")
+            } else {
+                print("UNKWOWN \(n)l")
             }
         } else if peek == ASC_K {
             idx += 1
@@ -379,13 +412,15 @@ class Terminal {
         } else if peek == ASC_r {
             idx += 1;
             
-            var n: UInt16 = 0;
+            var n: UInt16 = 1;
             if numbers.count > 0 { n = numbers[0] }
             
-            var m: UInt16 = 0;
+            var m: UInt16 = UInt16(HEIGHT);
             if numbers.count > 1 { m = numbers[1] }
             
-            print("TODO: [\(n);\(m)r")
+            self.scrollTop = Int(n - 1);
+            self.scrollBottom = Int(m - 1);
+            print("Setting scroll bounds: [\(n);\(m)r")
         } else if peek == ASC_t {
             idx += 1;
             
@@ -397,7 +432,6 @@ class Terminal {
             
             var o: UInt16 = 0;
             if numbers.count > 1 { o = numbers[1] }
-
             
             print("TODO: [\(n);\(m);\(o)t")
         } else if peek == ASC_L {

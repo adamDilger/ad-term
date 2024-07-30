@@ -51,7 +51,7 @@ class TTY {
         let tmp = FileHandle.init(forUpdatingAtPath: "/Users/adamdilger/helloworld.txt");
         
         self.masterFile!.readabilityHandler = { handler in
-            let cur = self.terminal.buffer.count
+//            let cur = self.terminal.buffer.count
              
             let data = handler.availableData;
             
