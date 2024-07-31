@@ -11,6 +11,7 @@ import Foundation
 let backspace = Character("\u{8}").asciiValue!;
 let newline = Character("\n").asciiValue!;
 let carriagereturn = Character("\r").asciiValue!;
+let tab = Character("\t").asciiValue!;
 
 let ASC_A = Character("A").asciiValue!;
 let ASC_B = Character("B").asciiValue!;

@@ -47,15 +47,17 @@ class Terminal {
     var scrollTop: Int;
     var scrollBottom: Int;
     
-    var WIDTH = 80;
-    var HEIGHT = 24;
+    var WIDTH: Int;
+    var HEIGHT: Int;
 
     init(width: Int, height: Int) {
+        self.WIDTH = width;
+        self.HEIGHT = height;
         self.buffer = Data()
         for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
         
         self.scrollTop = 0;
-        self.scrollBottom = HEIGHT - 2;
+        self.scrollBottom = HEIGHT - 1;
         
         self.WIDTH = width;
         self.HEIGHT = height;
@@ -64,6 +66,10 @@ class Terminal {
     }
     
     func resize(_ width: Int, _ height: Int) {
+        if self.scrollBottom == HEIGHT - 1 {
+            self.scrollBottom = height - 1;
+        }
+
         self.WIDTH = width;
         self.HEIGHT = height;
 
@@ -71,6 +77,8 @@ class Terminal {
         for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
         
         self.currentLineBufferIndex = 0;
+        self.cursor = point(x: 0, y: 0)
+        
     }
     
     func clearCell(cell: inout Cell) {
@@ -85,26 +93,19 @@ class Terminal {
             self.clearCell(cell: &self.cells[i])
         }
     }
+    
+    func peek(_ idx: Int, by: Int = 1) -> UInt8? {
+        return idx + by < self.buffer.count ? self.buffer[idx + by] : nil;
+    }
 
     func draw() {
-        print("--------------------------------------------------------------------")
-//        self.cursor.x = 0;
-//        self.cursor.y = HEIGHT - 1;
-//        self.fgColor = 37
-//        self.bgColor = 30
-        
-//        for i in 0..<HEIGHT {
-//            self.clearRow(y: i) // needed?
-//        }
-        
         var idx = currentLineBufferIndex;
         while idx < self.buffer.count {
             // print(String(decoding: data[s..<e], as: UTF8.self))
             let b = self.buffer[idx];
-            let bc = Character(UnicodeScalar(b))
             
             if b == ASC_ESC {
-                let peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                let peek = self.peek(idx)
                 
                 if peek == ASC_L_SQUARE {
                     idx += 1;
@@ -112,35 +113,30 @@ class Terminal {
                 } else if peek == ASC_P {
                     // xterm doesn't do anything with these... so ignore?
                     idx += 1
-                    var p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
-                    var p2 = idx + 2 < self.buffer.count ? self.buffer[idx + 2] : nil;
-                    
+                    var p1 = self.peek(idx, by: 1)
+                    var p2 = self.peek(idx, by: 2)
+
                     while !(p1 == ASC_ESC && p2 == ASC_BACKSLASH) {
                         idx += 1
-                        p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
-                        p2 = idx + 2 < self.buffer.count ? self.buffer[idx + 2] : nil;
+                        p1 = self.peek(idx, by: 1)
+                        p2 = self.peek(idx, by: 2)
                     }
                     
                     idx += 2 // skip over peeks
+                    print("TODO: esc P")
                 } else if peek == ASC_R_SQUARE {
                     idx += 1
-                    var p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                    var p1 = self.peek(idx)
                     
                     while p1 != ASC_BELL {
                         idx += 1
-                        p1 = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                        p1 = self.peek(idx)
                     }
                     
                     idx += 1 // skip over peeks
-                    // print("TODO: [");
+                    print("TODO: esc ]");
                 } else {
-                    // TODO: CHECK BOUNDS
-                    if idx + 1 < self.buffer.count {
-                        idx += 1;
-                        print("UNKNOWN ESCAPE CHAR: \(Character(UnicodeScalar(self.buffer[idx])))")
-                    } else {
-                        print("EOL ----------------------------------------------------------")
-                    }
+                    print("UNKNOWN ESCAPE CHAR: \(Character(UnicodeScalar(peek ?? 0)))")
                 }
             } else if b == ASC_BELL {
                 print("BELL");
@@ -154,7 +150,7 @@ class Terminal {
             } else {
                 var cellIndex = cursor.x + (cursor.y * WIDTH)
                 
-                if bc == "\t" {
+                if b == tab {
                     // insert tab chars to next multiple of 8
                     repeat {
                         self.cells[cellIndex].char = " "
@@ -171,7 +167,7 @@ class Terminal {
                     self.cells[cellIndex].bgColor = bgColor
                     self.cells[cellIndex].fgColor = fgColor
                     self.cells[cellIndex].inverted = inverted
-                    self.cells[cellIndex].char = bc
+                    self.cells[cellIndex].char = Character(UnicodeScalar(b));
                     
                     if cursor.x + 1 == WIDTH {
                         cursor.x = 0;
@@ -248,13 +244,10 @@ class Terminal {
 
     func newLine() {
         let shouldScroll = self.cursor.y == self.scrollBottom
-        print("Newline: shouldScroll \(shouldScroll)")
 
         if shouldScroll == false && self.cursor.y + 1 < HEIGHT {
             self.cursor.y += 1;
         }
-        
-//        self.describe();
         
         if shouldScroll {
             // we're at the bottom of the grid, so don't "move down"
@@ -267,18 +260,14 @@ class Terminal {
                 : self.cells[((self.scrollBottom + 1) * WIDTH)..<HEIGHT*WIDTH] // the rest
 
             self.cells = Array(a + b + c + d)
+            self.clearRow(y: self.cursor.y)
         }
-//        self.describe();
-
-        // self.clearRow(y: self.cursor.y)
     }
     
     func readControlCode(idx: inout Int) {
-        var peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+        var peek = self.peek(idx)
         
-        if peek == nil {
-            return;
-        }
+        if peek == nil { return; }
 
         var questionMark = false;
 //        var greaterThan = false;
@@ -295,56 +284,45 @@ class Terminal {
             }
             
             idx += 1;
-            peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+            peek = self.peek(idx)
         }
         
-        if peek == nil {
-            return;
-        }
+        if peek == nil { return; }
 
         // we've parsed some rando characters, now parse out the number array
-        var numbers = Array<UInt16>();
+        var numbers: [UInt16] = [0, 0, 0, 0]
         
+        var ni = 0;
         while peek == ASC_SEMI_COLON || (ASC_0 <= peek! && peek! <= ASC_9) {
-            while ASC_0 <= peek! && peek! <= ASC_9 {
-                if numbers.isEmpty { numbers.append(0); }
-                
-                numbers[numbers.count - 1] *= 10
-                numbers[numbers.count - 1] += UInt16(peek! - ASC_0)
+            while peek != nil && ASC_0 <= peek! && peek! <= ASC_9 {
+                numbers[ni] *= 10
+                numbers[ni] += UInt16(peek! - ASC_0)
                 
                 idx += 1;
-                peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                peek = self.peek(idx);
             }
             
             if peek == ASC_SEMI_COLON {
-                numbers.append(0);
+                ni += 1
                 idx += 1;
-                peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
+                peek = self.peek(idx);
             }
             
-            if peek == nil {
-                return;
-            }
+            if peek == nil { return; }
         }
         
-        if peek == nil {
-            return;
-        }
+        if peek == nil { return; }
         
         if peek == ASC_C {
-            idx += 1;
-
             // move cursor right
-            var n: UInt16 = 1;
-            if numbers.count > 0 && numbers[0] != 0 { n = numbers[0] }
-            
+            idx += 1;
+            let n = numbers[0] == 0 ? 1 : numbers[0]
             cursor.x += Int(n)
         } else if peek == ASC_h {
             idx += 1;
             
-            var n: UInt16 = 1;
-            if numbers.count > 0 && numbers[0] != 0 { n = numbers[0] }
-            
+            let n = numbers[0] == 0 ? 1 : numbers[0]
+
             if n == 1049 {
                 self.alternateCells = self.cells;
                 self.alternateX = cursor.x;
@@ -362,9 +340,8 @@ class Terminal {
         } else if peek == ASC_l {
             idx += 1;
             
-            var n: UInt16 = 1;
-            if numbers.count > 0 && numbers[0] != 0 { n = numbers[0] }
-            
+            let n = numbers[0] == 0 ? 1 : numbers[0]
+
             if n == 1049 {
                 self.cells = self.alternateCells;
                 self.alternateCells = Array();
@@ -378,9 +355,7 @@ class Terminal {
         } else if peek == ASC_K {
             idx += 1
             
-            var n: UInt16 = 0;
-            if numbers.count > 0 && numbers[0] != 0 { n = numbers[0] }
-            
+            let n = numbers[0]
             if n == 0 {
                 print("[\(n)K -- y: \(cursor.y) | x: \(cursor.x) to WIDTH")
                 // If n is 0 (or missing), clear from cursor to the end of the line.
@@ -398,11 +373,8 @@ class Terminal {
         } else if peek == ASC_H {
             idx += 1;
             
-            var n: UInt16 = 1;
-            if numbers.count > 0 && numbers[0] != 0 { n = numbers[0] }
-            
-            var m: UInt16 = 1;
-            if numbers.count > 1 && numbers[1] != 0 { m = numbers[1] }
+            let n = numbers[0] == 0 ? 1 : numbers[0]
+            let m = numbers[1] == 0 ? 1 : numbers[1]
             
             print("\(n);\(m)H")
             
@@ -411,10 +383,8 @@ class Terminal {
         } else if peek == ASC_J {
             idx += 1;
             
-            var n: UInt16 = 0;
-            if numbers.count > 0 { n = numbers[0] }
-            
-            // print("\(n)J")
+            let n = numbers[0]
+
             if n == 0 {
                 // If n is 0 (or missing), clear from cursor to end of screen.
                 print("TODO: // [0J")
@@ -430,7 +400,7 @@ class Terminal {
                     clearCell(cell: &self.cells[i]);
                 }
             }
-        } else if peek == ASC_m && numbers.count > 1 {
+        } else if peek == ASC_m && numbers[1] > 0 {
             idx += 1;
             
             let n = numbers[0]
@@ -440,15 +410,13 @@ class Terminal {
         } else if peek == ASC_m {
             idx += 1;
             
-            var n: UInt16 = 0;
-            if numbers.count > 0 { n = numbers[0] }
-            
+            let n = numbers[0]
+
             switch (n) {
             case 0:  
                 fgColor = 37
                 bgColor = 40
                 inverted = false;
-                print("[\(n)m setting Normal (default)");
             case 1:  print("[\(n)m setting Bold");
             case 7:  inverted = true;
             case 4:  print("[\(n)m setting Underlined");
@@ -476,11 +444,8 @@ class Terminal {
         } else if peek == ASC_r {
             idx += 1;
             
-            var n: UInt16 = 1;
-            if numbers.count > 0 { n = numbers[0] }
-            
-            var m: UInt16 = UInt16(HEIGHT);
-            if numbers.count > 1 { m = numbers[1] }
+            let n = numbers[0] == 0 ? 1 : numbers[0]
+            let m = numbers[1] == 0 ? UInt16(HEIGHT) : numbers[1]
             
             self.scrollTop = Int(n - 1);
             self.scrollBottom = Int(m - 1);
@@ -488,29 +453,22 @@ class Terminal {
         } else if peek == ASC_t {
             idx += 1;
             
-            var n: UInt16 = 0;
-            if numbers.count > 0 { n = numbers[0] }
-            
-            var m: UInt16 = 0;
-            if numbers.count > 1 { m = numbers[1] }
-            
-            var o: UInt16 = 0;
-            if numbers.count > 1 { o = numbers[1] }
+            let n = numbers[0]
+            let m = numbers[1]
+            let o = numbers[2]
             
             print("TODO: [\(n);\(m);\(o)t")
         } else if peek == ASC_L {
             idx += 1;
-            var n: UInt16 = 1;
-            if numbers.count > 0 { n = numbers[0] }
-            
+            let n = numbers[0] == 0 ? 1 : numbers[0]
+
             for _ in 0..<n {
                 self.insertLine()
             }
         } else if peek == ASC_M {
             idx += 1;
-            var n: UInt16 = 1;
-            if numbers.count > 0 { n = numbers[0] }
-            
+            let n = numbers[0] == 0 ? 1 : numbers[0]
+
             for _ in 0..<n {
                 self.deleteLine()
             }

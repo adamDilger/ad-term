@@ -51,8 +51,8 @@ class GameViewController: NSViewController {
         let _c = Int(floor(_a))
         let _d = Int(floor(_b))
 
-        var WIDTH = _c;
-        var HEIGHT = _d;
+        let WIDTH = _c;
+        let HEIGHT = _d;
 
         let t = Terminal(width: WIDTH, height: HEIGHT);
         self.terminal = t;

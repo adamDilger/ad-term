@@ -9,6 +9,7 @@ import Foundation
 import CoreText
 import GLKit
 import AppKit
+import UniformTypeIdentifiers
 
 func GenerateGlyph(texture: MTLTexture, char: Character) {
     let mabstring = NSMutableAttributedString(string: String(char))
@@ -49,7 +50,8 @@ func GenerateGlyph(texture: MTLTexture, char: Character) {
 
 @discardableResult func writeCGImage(_ image: CGImage) -> Bool {
     let destinationURL = URL(filePath: "/Users/adamdilger/helloworld.png")
-    guard let destination = CGImageDestinationCreateWithURL(destinationURL as CFURL, kUTTypePNG, 1, nil) else { return false }
+    guard let destination = CGImageDestinationCreateWithURL(destinationURL as CFURL, UTType.png.identifier as CFString, 1, nil) else { return false }
+    
     CGImageDestinationAddImage(destination, image, nil)
     return CGImageDestinationFinalize(destination)
 }
