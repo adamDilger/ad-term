@@ -51,13 +51,13 @@ class GameViewController: NSViewController {
         let _c = Int(floor(_a))
         let _d = Int(floor(_b))
 
-        WIDTH = _c;
-        HEIGHT = _d;
+        var WIDTH = _c;
+        var HEIGHT = _d;
 
-        let t = Terminal();
+        let t = Terminal(width: WIDTH, height: HEIGHT);
         self.terminal = t;
 
-        guard let newRenderer = Renderer(metalKitView: mtkView, &self.terminal!.cells) else {
+        guard let newRenderer = Renderer(metalKitView: mtkView, terminal: &self.terminal!) else {
             print("Renderer cannot be initialized")
             return
         }

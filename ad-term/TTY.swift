@@ -16,7 +16,11 @@ class TTY {
     
 //    var buffer: Data;
 //    var lines: Array<line>;
+    
+    var ws: winsize
     var terminal: Terminal;
+    
+    var masterFD = -1
 
     init(_ terminal: Terminal) {
         self.terminal = terminal;
@@ -27,7 +31,7 @@ class TTY {
         var masterFD = Int32(-1)
         var slaveFD = Int32(-1)
         
-        var ws = winsize(ws_row: UInt16(HEIGHT), ws_col: UInt16(WIDTH), ws_xpixel: 1000, ws_ypixel: 1000)
+        self.ws = winsize(ws_row: UInt16(terminal.HEIGHT), ws_col: UInt16(terminal.WIDTH), ws_xpixel: 1000, ws_ypixel: 1000)
         
         guard openpty(&masterFD, &slaveFD, &temp, nil, &ws) != -1 else {
             fatalError("failed to open pty")
@@ -36,15 +40,20 @@ class TTY {
         self.masterFile = FileHandle.init(fileDescriptor: masterFD)
         self.slaveFile = FileHandle.init(fileDescriptor: slaveFD)
         
+        
         self.task!.executableURL = URL(fileURLWithPath: "/bin/bash")
         self.task!.arguments = ["-i"]; //, "-c"]; , "vi ~/.bashrc"]
         self.task!.standardOutput = slaveFile
         self.task!.standardInput = slaveFile
         self.task!.standardError = slaveFile
     }
-    
-    func newLine(at: Int) {
-        self.terminal.lines.append(line(start: at + 1, end: at + 1))
+     
+    func resize(width: Int, height: Int) {
+        self.ws.ws_col = UInt16(width)
+        self.ws.ws_row = UInt16(height)
+        
+        let res = ioctl(self.masterFile!.fileDescriptor, TIOCSWINSZ, &self.ws);
+        print("RES: \(res)")
     }
     
     func run() {

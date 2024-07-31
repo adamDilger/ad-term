@@ -7,8 +7,8 @@
 
 import Foundation
 
-var WIDTH = 80;
-var HEIGHT = 24;
+// var WIDTH = 80;
+// var HEIGHT = 24;
 
 struct Cell {
     var char: Character?;
@@ -43,22 +43,34 @@ class Terminal {
     var currentLineBufferIndex = 0;
     
     var buffer: Data
-    var lines: Array<line>;
     
     var scrollTop: Int;
     var scrollBottom: Int;
     
-    init() {
+    var WIDTH = 80;
+    var HEIGHT = 24;
+
+    init(width: Int, height: Int) {
         self.buffer = Data()
-        self.lines = [line(start: 0, end: 0)]
         for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
         
         self.scrollTop = 0;
         self.scrollBottom = HEIGHT - 2;
         
-        // self.cursor.y = self.scrollBottom
-        
+        self.WIDTH = width;
+        self.HEIGHT = height;
+
         self.tty = TTY(self);
+    }
+    
+    func resize(_ width: Int, _ height: Int) {
+        self.WIDTH = width;
+        self.HEIGHT = height;
+
+        self.cells = [];
+        for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
+        
+        self.currentLineBufferIndex = 0;
     }
     
     func clearCell(cell: inout Cell) {
@@ -258,7 +270,7 @@ class Terminal {
         }
 //        self.describe();
 
-        self.clearRow(y: self.cursor.y)
+        // self.clearRow(y: self.cursor.y)
     }
     
     func readControlCode(idx: inout Int) {
@@ -286,6 +298,10 @@ class Terminal {
             peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
         }
         
+        if peek == nil {
+            return;
+        }
+
         // we've parsed some rando characters, now parse out the number array
         var numbers = Array<UInt16>();
         
@@ -305,6 +321,14 @@ class Terminal {
                 idx += 1;
                 peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
             }
+            
+            if peek == nil {
+                return;
+            }
+        }
+        
+        if peek == nil {
+            return;
         }
         
         if peek == ASC_C {

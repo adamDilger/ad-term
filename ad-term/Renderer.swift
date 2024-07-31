@@ -16,8 +16,6 @@ struct Vertex {
 }
 
 class Renderer: NSObject, MTKViewDelegate {
-    var helloworld = 0;
-    
     var device: MTLDevice
     var commandQueue: MTLCommandQueue
     
@@ -29,8 +27,8 @@ class Renderer: NSObject, MTKViewDelegate {
     
     var renderPipelineState: MTLRenderPipelineState?
     
-    var vertexBuffer: MTLBuffer
-    var indexBuffer: MTLBuffer
+    var vertexBuffer: MTLBuffer?
+    var indexBuffer: MTLBuffer?
     
 //     var colorTexture: MTLTexture?
     var fontTexture: MTLTexture?
@@ -38,10 +36,16 @@ class Renderer: NSObject, MTKViewDelegate {
     var vertices: [Vertex] = []
     var indices: [ushort] = []
     
-    init?(metalKitView: MTKView, _ cells: inout [Cell]) {
+    var currentWidth = 0;
+    var currentHeight = 0;
+    
+    var terminal: Terminal
+
+    init?(metalKitView: MTKView, terminal: inout Terminal) {
         //Device and command queue
         self.device = metalKitView.device!
         self.commandQueue = self.device.makeCommandQueue()!
+        self.terminal = terminal;
         
         //Vertex descriptor
         vertexDescriptor = MTLVertexDescriptor()
@@ -71,6 +75,9 @@ class Renderer: NSObject, MTKViewDelegate {
         self.vertexFunction = library.makeFunction(name: "vertexFunction")!
         self.fragmentFunction = library.makeFunction(name: "fragmentFunction")!
         
+        self.currentWidth = terminal.WIDTH;
+        self.currentHeight = terminal.HEIGHT;
+
         //Render pipeline descriptor
         let renderPipelineStateDescriptor = MTLRenderPipelineDescriptor()
         renderPipelineStateDescriptor.vertexFunction = vertexFunction
@@ -83,29 +90,30 @@ class Renderer: NSObject, MTKViewDelegate {
             print("Failed to create render pipeline state")
         }
         
-        self.vertices = []
-        self.indices = []
-        fill(&self.vertices, &self.indices, &cells, cursor: point(x: 0, y: 0));
-        
-        self.vertexBuffer = self.device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride, options: MTLResourceOptions.storageModeShared)!
-        self.indexBuffer = self.device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<ushort>.stride, options: MTLResourceOptions.storageModeShared)!
-
-
-        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .rgba8Unorm,
-            width: fontWidth * 16,
-            height: fontHeight * 16,
-            mipmapped: true)
-        self.fontTexture = device.makeTexture(descriptor: textureDescriptor)!
-        
-        for i in 32..<127 {
-            GenerateGlyph(texture: self.fontTexture!, char: Character(UnicodeScalar(i)!))
-        }
-        
+//        self.vertices = []
+//        self.indices = []
+//        fill(&self.vertices, &self.indices, &cells, cursor: point(x: 0, y: 0));
+//        
+//        self.vertexBuffer = self.device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride, options: MTLResourceOptions.storageModeShared)!
+//        self.indexBuffer = self.device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<ushort>.stride, options: MTLResourceOptions.storageModeShared)!
+//
+//
+//        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
+//            pixelFormat: .rgba8Unorm,
+//            width: fontWidth * 16,
+//            height: fontHeight * 16,
+//            mipmapped: true)
+//        self.fontTexture = device.makeTexture(descriptor: textureDescriptor)!
+//        
+//        for i in 32..<127 {
+//            GenerateGlyph(texture: self.fontTexture!, char: Character(UnicodeScalar(i)!))
+//        }
         super.init()
     }
     
     func draw(in view: MTKView) {
+        guard let indexBuffer = self.indexBuffer else { return; }
+
         //Create command buffer
         let commandBuffer = self.commandQueue.makeCommandBuffer()!
         
@@ -129,7 +137,7 @@ class Renderer: NSObject, MTKViewDelegate {
             // Render
             renderEncoder.drawIndexedPrimitives(
                 type: MTLPrimitiveType.triangle,
-                indexCount: WIDTH * HEIGHT * 6,
+                indexCount: self.currentWidth * self.currentHeight * 6,
                 indexType: MTLIndexType.uint16,
                 indexBuffer: indexBuffer,
                 indexBufferOffset: 0)
@@ -154,24 +162,57 @@ class Renderer: NSObject, MTKViewDelegate {
 
         print("new WIDTH \(_c)");
         print("new HEIGHT \(_d)");
+        
+        self.currentWidth = _c;
+        self.currentHeight = _d;
+        
+        terminal.resize(self.currentWidth, self.currentHeight)
+        self.setupTexture()
+        self.terminal.tty!.resize(width: _c, height: _d)
+        terminal.draw();
     }
     
     func tick(terminal: Terminal) {
+        guard let vertexBuffer = self.vertexBuffer else { return; }
         self.vertices = [];
         self.indices = [];
-        fill(&self.vertices, &self.indices, &terminal.cells, cursor: terminal.cursor);
-        self.vertexBuffer.contents().copyMemory(from: &self.vertices, byteCount: vertices.count * MemoryLayout<Vertex>.stride)
+        fill(&self.vertices, &self.indices, &terminal.cells, cursor: terminal.cursor, width: self.currentWidth);
+        vertexBuffer.contents().copyMemory(from: &self.vertices, byteCount: vertices.count * MemoryLayout<Vertex>.stride)
+    }
+    
+    func setupTexture() {
+        self.vertices = []
+        self.indices = []
+        fill(&self.vertices, &self.indices, &self.terminal.cells, cursor: point(x: 0, y: 0), width: self.currentWidth);
+        
+        self.vertexBuffer = self.device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride, options: MTLResourceOptions.storageModeShared)!
+        self.indexBuffer = self.device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<ushort>.stride, options: MTLResourceOptions.storageModeShared)!
+
+
+        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: .rgba8Unorm,
+            width: fontWidth * 16,
+            height: fontHeight * 16,
+            mipmapped: true)
+        self.fontTexture = device.makeTexture(descriptor: textureDescriptor)!
+        
+        for i in 32..<127 {
+            GenerateGlyph(texture: self.fontTexture!, char: Character(UnicodeScalar(i)!))
+        }
+;
     }
 }
     
 let H: Float = 16
 let W: Float = 16
-func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout [Cell], cursor: point) {
-    for i in 0..<HEIGHT {
+func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout [Cell], cursor: point, width: Int) {
+    let height = cells.count / width;
+    
+    for i in 0..<height {
         let cursorInRow = cursor.y == i;
         
-        let iOffset = (i * WIDTH)
-        for j in 0..<WIDTH {
+        let iOffset = (i * width)
+        for j in 0..<width {
             let isCursor = cursorInRow && cursor.x == j;
             
             let idx = (j + iOffset) % cells.count;
@@ -183,10 +224,10 @@ func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout 
                 v_idx, v_idx + 2, v_idx + 3
             ])
             
-            let x_0 = ((Float(j) / Float(WIDTH)) - 0.5) * 2;
-            let x_1 = ((Float(j + 1) / Float(WIDTH)) - 0.5) * 2;
-            let y_0 = (((Float(i) / Float(HEIGHT)) - 0.5) * -1) * 2;
-            let y_1 = (((Float(i + 1) / Float(HEIGHT)) - 0.5) * -1) * 2;
+            let x_0 = ((Float(j) / Float(width)) - 0.5) * 2;
+            let x_1 = ((Float(j + 1) / Float(width)) - 0.5) * 2;
+            let y_0 = (((Float(i) / Float(height)) - 0.5) * -1) * 2;
+            let y_1 = (((Float(i + 1) / Float(height)) - 0.5) * -1) * 2;
             
             let cellChar = cell.char ?? " "
             let cellCharAscii = cellChar.asciiValue ?? 0;
@@ -216,7 +257,7 @@ func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout 
     }
 }
 
-let Black    = simd_float3(0.25, 0.25, 0.25);
+let Black    = simd_float3(0.10, 0.10, 0.10);
 let Red    = simd_float3(1, 0.25, 0.25);
 let Green    = simd_float3(0.25, 1, 0.25);
 let Yellow    = simd_float3(1, 1, 0.25);
