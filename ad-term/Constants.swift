@@ -20,6 +20,7 @@ let ASC_D = Character("D").asciiValue!;
 let ASC_J = Character("J").asciiValue!;
 let ASC_K = Character("K").asciiValue!;
 let ASC_L = Character("L").asciiValue!;
+let ASC_M = Character("M").asciiValue!;
 let ASC_h = Character("h").asciiValue!;
 let ASC_H = Character("H").asciiValue!;
 let ASC_m = Character("m").asciiValue!;

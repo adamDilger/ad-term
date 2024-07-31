@@ -40,7 +40,6 @@ class Terminal {
     var alternateY = 0;
 
     var cursor = point(x: 0, y: 0)
-    
     var currentLineBufferIndex = 0;
     
     var buffer: Data
@@ -55,7 +54,9 @@ class Terminal {
         for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
         
         self.scrollTop = 0;
-        self.scrollBottom = HEIGHT - 1;
+        self.scrollBottom = HEIGHT - 2;
+        
+        // self.cursor.y = self.scrollBottom
         
         self.tty = TTY(self);
     }
@@ -96,8 +97,6 @@ class Terminal {
                 if peek == ASC_L_SQUARE {
                     idx += 1;
                     self.readControlCode(idx: &idx);
-                } else if peek == ASC_L {
-                    print("FUK")
                 } else if peek == ASC_P {
                     // xterm doesn't do anything with these... so ignore?
                     idx += 1
@@ -123,8 +122,13 @@ class Terminal {
                     idx += 1 // skip over peeks
                     // print("TODO: [");
                 } else {
-                    idx += 1;
-                    print("UNKNOWN ESCAPE CHAR: \(Character(UnicodeScalar(self.buffer[idx])))")
+                    // TODO: CHECK BOUNDS
+                    if idx + 1 < self.buffer.count {
+                        idx += 1;
+                        print("UNKNOWN ESCAPE CHAR: \(Character(UnicodeScalar(self.buffer[idx])))")
+                    } else {
+                        print("EOL ----------------------------------------------------------")
+                    }
                 }
             } else if b == ASC_BELL {
                 print("BELL");
@@ -178,7 +182,12 @@ class Terminal {
     
     func describe() {
         var out: [Character] = []
+        
+        out += "------------------------------------";
+        
         for i in 0..<HEIGHT {
+            out += "\(i)  |";
+            
             for j in 0..<WIDTH {
                 out.append(self.cells[j + (i*WIDTH)].char ?? Character(" "));
             }
@@ -188,46 +197,77 @@ class Terminal {
         print(String(out) + "------------------------------------");
     }
     
+    func deleteLine() {
+        // get 0 to < y
+        let a = self.cells[0 ..< (self.cursor.y * WIDTH)]
+        
+        // get the rest of the scroll region (-1)
+        let b = self.cells[((self.cursor.y + 1) * WIDTH) ..< ((self.scrollBottom + 1) * WIDTH)]
+        
+        // get the current y line (this will be cleared)
+        let c = self.cells[(self.cursor.y * WIDTH) ..< ((self.cursor.y + 1) * WIDTH)]
+        
+        let d = self.scrollBottom == HEIGHT - 1
+            ? []
+            : self.cells[((self.scrollBottom + 1) * WIDTH)..<HEIGHT*WIDTH] // the rest
+
+        self.cells = Array(a + b + c + d)
+        self.clearRow(y: self.scrollBottom)
+    }
+    
     func insertLine() {
-        // do logic
+        // get 0 to < y
+        let a = self.cells[0 ..< (self.cursor.y * WIDTH)]
+        
+        // get last line of scroll region, this is the "new" line
+        let b = self.cells[(self.scrollBottom * WIDTH) ..< ((self.scrollBottom + 1) * WIDTH)]
+        
+        // get the rest of the scroll region (-1)
+        let c = self.cells[((self.cursor.y) * WIDTH) ..< ((self.scrollBottom) * WIDTH)]
+        
+        let d = self.scrollBottom == HEIGHT - 1
+            ? []
+            : self.cells[((self.scrollBottom + 1) * WIDTH)..<HEIGHT*WIDTH] // the rest
+
+        
+        self.cells = Array(a + b + c + d)
+        self.clearRow(y: self.cursor.y)
     }
 
     func newLine() {
-        // TODO: more bounds checking
-        if self.cursor.y + 1 <= self.scrollBottom {
+        let shouldScroll = self.cursor.y == self.scrollBottom
+        print("Newline: shouldScroll \(shouldScroll)")
+
+        if shouldScroll == false && self.cursor.y + 1 < HEIGHT {
             self.cursor.y += 1;
-        } else if self.cursor.y > self.scrollBottom && self.cursor.y + 1 == HEIGHT {
-            // do nothing
-        } else {
+        }
+        
+//        self.describe();
+        
+        if shouldScroll {
             // we're at the bottom of the grid, so don't "move down"
             // everything will shift up instead
-
-            print(self.cells.count)
-            
-            
             let a = self.cells[0 ..< (self.scrollTop * WIDTH)] // everything up until the scroll region, should be 0 for normal operation
-            let b = self.cells[((self.scrollTop + 1) * WIDTH) ..< ((self.scrollBottom) * WIDTH)] // scroll region start + 1 (as we're 'scrolling', so skip first line)
+            let b = self.cells[((self.scrollTop + 1) * WIDTH) ..< ((self.scrollBottom + 1) * WIDTH)] // scroll region start + 1 (as we're 'scrolling', so skip first line)
             let c = self.cells[((self.scrollTop) * WIDTH) ..< ((self.scrollTop + 1) * WIDTH)] // first line of scroll region
-            let d = self.cells[((self.scrollBottom) * WIDTH)...] // the rest
+            let d = self.scrollBottom == HEIGHT - 1
+                ? []
+                : self.cells[((self.scrollBottom + 1) * WIDTH)..<HEIGHT*WIDTH] // the rest
 
-            self.cells = Array(
-                a
-                +
-                b
-                +
-                c
-                +
-                d
-            )
-            print(self.cells.count)
-
-            self.clearRow(y: self.cursor.y)
+            self.cells = Array(a + b + c + d)
         }
+//        self.describe();
+
+        self.clearRow(y: self.cursor.y)
     }
     
     func readControlCode(idx: inout Int) {
-        var peek: UInt8? = self.buffer[idx + 1];
+        var peek = idx + 1 < self.buffer.count ? self.buffer[idx + 1] : nil;
         
+        if peek == nil {
+            return;
+        }
+
         var questionMark = false;
 //        var greaterThan = false;
 //        var lessThan = false;
@@ -440,7 +480,15 @@ class Terminal {
             if numbers.count > 0 { n = numbers[0] }
             
             for _ in 0..<n {
-                self.newLine()
+                self.insertLine()
+            }
+        } else if peek == ASC_M {
+            idx += 1;
+            var n: UInt16 = 1;
+            if numbers.count > 0 { n = numbers[0] }
+            
+            for _ in 0..<n {
+                self.deleteLine()
             }
         } else {
             idx += 1;

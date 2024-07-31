@@ -3,6 +3,22 @@
    version = "1.0">
    <ContextStates>
       <ContextState
+         contextName = "Terminal.insertLine():Terminal.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "self.cells.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Terminal.draw():Terminal.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "self.buffer.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "GameViewController.viewDidLoad():GameViewController.swift">
          <PersistentStrings>
             <PersistentString
@@ -14,9 +30,6 @@
          contextName = "Terminal.newLine():Terminal.swift">
          <PersistentStrings>
             <PersistentString
-               value = "cells.endIndex">
-            </PersistentString>
-            <PersistentString
                value = "cells.count">
             </PersistentString>
          </PersistentStrings>
@@ -26,6 +39,14 @@
          <PersistentStrings>
             <PersistentString
                value = "cells[idx]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Terminal.deleteLine():Terminal.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "self.cells.count">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
