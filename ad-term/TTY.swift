@@ -65,6 +65,7 @@ class TTY {
             let data = handler.availableData;
             
             tmp!.write(data);
+            tmp!.write("\n\n".data(using: .utf8)!);
             do {
                 try tmp!.synchronize()
             } catch {

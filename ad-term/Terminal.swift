@@ -49,6 +49,8 @@ class Terminal {
     
     var WIDTH: Int;
     var HEIGHT: Int;
+    
+    var escapeParser = EscapeParser();
 
     init(width: Int, height: Int) {
         self.WIDTH = width;
@@ -100,9 +102,39 @@ class Terminal {
 
     func draw() {
         var idx = currentLineBufferIndex;
+        var C0: UInt8?
+
         while idx < self.buffer.count {
             // print(String(decoding: data[s..<e], as: UTF8.self))
             let b = self.buffer[idx];
+            
+            if b == ASC_ESC {
+                if b == ASC_G {
+                    C0 = C0_BEL
+                } else if b == ASC_H {
+                    C0 = C0_BS
+                } else if b == ASC_I {
+                    C0 = C0_HT
+                } else if b == ASC_J {
+                    C0 = C0_LF
+                } else if b == ASC_L {
+                    C0 = C0_FF
+                } else if b == ASC_M {
+                    C0 = C0_CR
+                } else if b == ASC_L_SQUARE {
+                    C0 = C0_ESC
+                } else {
+                    print("Unknown C0: \(b)");
+                    return;
+                }
+            }
+            
+            idx += 1
+            
+            if C0 == C0_ESC {
+                escapeParser.parse(buffer, idx: &idx)
+                idx += 1
+            }
             
             if b == ASC_ESC {
                 let peek = self.peek(idx)
@@ -265,62 +297,16 @@ class Terminal {
     }
     
     func readControlCode(idx: inout Int) {
-        var peek = self.peek(idx)
+        var numbers = escapeParser.numbers
+        var CSI = escapeParser.CSI
         
-        if peek == nil { return; }
-
-        var questionMark = false;
-//        var greaterThan = false;
-//        var lessThan = false;
-//        var equals = false;
-        
-        while peek! >= ASC_LESS_THAN && peek! <= ASC_QUESTION_MARK {
-            switch peek {
-            case ASC_QUESTION_MARK: questionMark = true;
-//            case ASC_GREATER_THAN: greaterThan = true;
-//            case ASC_LESS_THAN: lessThan = true;
-//            case ASC_EQUALS: equals = true;
-            default: print("UNKNOWN: \(peek!)");
-            }
-            
-            idx += 1;
-            peek = self.peek(idx)
-        }
-        
-        if peek == nil { return; }
-
-        // we've parsed some rando characters, now parse out the number array
-        var numbers: [UInt16] = [0, 0, 0, 0]
-        
-        var ni = 0;
-        while peek == ASC_SEMI_COLON || (ASC_0 <= peek! && peek! <= ASC_9) {
-            while peek != nil && ASC_0 <= peek! && peek! <= ASC_9 {
-                numbers[ni] *= 10
-                numbers[ni] += UInt16(peek! - ASC_0)
-                
-                idx += 1;
-                peek = self.peek(idx);
-            }
-            
-            if peek == ASC_SEMI_COLON {
-                ni += 1
-                idx += 1;
-                peek = self.peek(idx);
-            }
-            
-            if peek == nil { return; }
-        }
-        
-        if peek == nil { return; }
-        
-        if peek == ASC_C {
-            // move cursor right
-            idx += 1;
+        if CSI == CSI_CUF {
             let n = numbers[0] == 0 ? 1 : numbers[0]
             cursor.x += Int(n)
-        } else if peek == ASC_h {
-            idx += 1;
-            
+            return;
+        }
+        
+        if CSI == CSI_SM {
             let n = numbers[0] == 0 ? 1 : numbers[0]
 
             if n == 1049 {
@@ -335,11 +321,13 @@ class Terminal {
                 
                 print("Alternate Buffer: ON")
             } else {
-                print("\(questionMark ? "?" : "")\(n)h")
+                print("\(n)h")
             }
-        } else if peek == ASC_l {
-            idx += 1;
             
+            return
+        }
+        
+        if CSI == CSI_DECRST {
             let n = numbers[0] == 0 ? 1 : numbers[0]
 
             if n == 1049 {
@@ -352,9 +340,11 @@ class Terminal {
             } else {
                 print("UNKWOWN \(n)l")
             }
-        } else if peek == ASC_K {
-            idx += 1
             
+            return;
+        }
+        
+        if CSI == CSI_EL {
             let n = numbers[0]
             if n == 0 {
                 print("[\(n)K -- y: \(cursor.y) | x: \(cursor.x) to WIDTH")
@@ -370,9 +360,9 @@ class Terminal {
                 // If n is 2, clear entire line. Cursor position does not change.
                 for c in 0..<WIDTH { clearCell(cell: &self.cells[c + (cursor.y * WIDTH)]) }
             }
-        } else if peek == ASC_H {
-            idx += 1;
-            
+        }
+        
+        if CSI == CSI_CUP {
             let n = numbers[0] == 0 ? 1 : numbers[0]
             let m = numbers[1] == 0 ? 1 : numbers[1]
             
@@ -380,9 +370,10 @@ class Terminal {
             
             cursor.x = Int(m) - 1;
             cursor.y = Int(n) - 1;
-        } else if peek == ASC_J {
-            idx += 1;
-            
+            return;
+        }
+        
+        if CSI == CSI_ED {
             let n = numbers[0]
 
             if n == 0 {
@@ -400,17 +391,19 @@ class Terminal {
                     clearCell(cell: &self.cells[i]);
                 }
             }
-        } else if peek == ASC_m && numbers[1] > 0 {
-            idx += 1;
-            
-            let n = numbers[0]
-            let m = numbers[1]
-            
-            print("TODO: [\(n);\(m)m")
-        } else if peek == ASC_m {
-            idx += 1;
-            
-            let n = numbers[0]
+        }
+        
+//        if peek == ASC_m && numbers[1] > 0 {
+//            idx += 1;
+//            
+//            let n = numbers[0]
+//            let m = numbers[1]
+//            
+//            print("TODO: [\(n);\(m)m")
+//        } else
+        
+        if CSI == CSI_SGR {
+            let n = UInt16(numbers[0])
 
             switch (n) {
             case 0:  
@@ -441,40 +434,49 @@ class Terminal {
             default: print("TODO: color [\(n)m")
             }
 
-        } else if peek == ASC_r {
-            idx += 1;
-            
+            return;
+        }
+        
+        if CSI == CSI_DECSTBM {
             let n = numbers[0] == 0 ? 1 : numbers[0]
-            let m = numbers[1] == 0 ? UInt16(HEIGHT) : numbers[1]
+            let m = numbers[1] == 0 ? HEIGHT : numbers[1]
             
             self.scrollTop = Int(n - 1);
             self.scrollBottom = Int(m - 1);
             print("Setting scroll bounds: [\(n);\(m)r")
-        } else if peek == ASC_t {
-            idx += 1;
             
+            return;
+        }
+        
+        if CSI == CSI_DECSLPP {
             let n = numbers[0]
             let m = numbers[1]
             let o = numbers[2]
             
             print("TODO: [\(n);\(m);\(o)t")
-        } else if peek == ASC_L {
-            idx += 1;
+            return;
+        }
+
+        if CSI == ASC_L {
             let n = numbers[0] == 0 ? 1 : numbers[0]
 
             for _ in 0..<n {
                 self.insertLine()
             }
-        } else if peek == ASC_M {
-            idx += 1;
+            
+            return;
+        }
+        
+        if CSI == CSI_DL {
             let n = numbers[0] == 0 ? 1 : numbers[0]
 
             for _ in 0..<n {
                 self.deleteLine()
             }
-        } else {
-            idx += 1;
-            print("----- UNKNOWN CSI: [\(Character(UnicodeScalar(self.buffer[idx])))")
+            
+            return;
         }
+        
+        print("----- UNKNOWN CSI: [\(Character(UnicodeScalar(self.buffer[idx])))")
     }
 }
