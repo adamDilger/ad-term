@@ -57,19 +57,19 @@ class TTY {
     }
     
     func run() {
-        let tmp = FileHandle.init(forUpdatingAtPath: "/Users/adamdilger/helloworld.txt");
+//        let tmp = FileHandle.init(forUpdatingAtPath: "/Users/adamdilger/helloworld.txt");
         
         self.masterFile!.readabilityHandler = { handler in
 //            let cur = self.terminal.buffer.count
              
             let data = handler.availableData;
             
-            tmp!.write(data);
-            do {
-                try tmp!.synchronize()
-            } catch {
-                print(error);
-            }
+//            tmp!.write(data);
+//            do {
+//                try tmp!.synchronize()
+//            } catch {
+//                print(error);
+//            }
             
             // print(String(decoding: data, as: UTF8.self))
             

@@ -3,6 +3,14 @@
    version = "1.0">
    <ContextStates>
       <ContextState
+         contextName = "GameViewController.sayHello():GameViewController.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "cells[idx]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "Terminal.insertLine():Terminal.swift">
          <PersistentStrings>
             <PersistentString
@@ -19,6 +27,9 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "example():termTests.swift">
+      </ContextState>
+      <ContextState
          contextName = "GameViewController.viewDidLoad():GameViewController.swift">
          <PersistentStrings>
             <PersistentString
@@ -27,26 +38,32 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "Terminal.newLine():Terminal.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "cells.count">
-            </PersistentString>
-         </PersistentStrings>
-      </ContextState>
-      <ContextState
-         contextName = "GameViewController.sayHello():GameViewController.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "cells[idx]">
-            </PersistentString>
-         </PersistentStrings>
+         contextName = "multiline():termTests.swift">
       </ContextState>
       <ContextState
          contextName = "Terminal.deleteLine():Terminal.swift">
          <PersistentStrings>
             <PersistentString
                value = "self.cells.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Parser.parseLines(lines:):term.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "cells[0].char">
+            </PersistentString>
+            <PersistentString
+               value = "UnicodeScalar(buf[idx])">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Terminal.newLine():Terminal.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "cells.count">
             </PersistentString>
          </PersistentStrings>
       </ContextState>

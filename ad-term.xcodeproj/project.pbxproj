@@ -17,8 +17,22 @@
 		92BC612A2C50FC51001B037A /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 92BC61292C50FC51001B037A /* Shaders.metal */; };
 		92BC612D2C50FC52001B037A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 92BC612C2C50FC52001B037A /* Assets.xcassets */; };
 		92BC61302C50FC52001B037A /* Base in Resources */ = {isa = PBXBuildFile; fileRef = 92BC612F2C50FC52001B037A /* Base */; };
+		92CE86C72DA90E8600A93BCA /* term in Frameworks */ = {isa = PBXBuildFile; productRef = 92CE86C62DA90E8600A93BCA /* term */; };
 		92F6A8402C53A68800346F1D /* Glyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F6A83F2C53A68800346F1D /* Glyph.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		92A54B272DA902B80008E997 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		920F77992C51160D004D4E6E /* font.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = font.png; sourceTree = "<group>"; };
@@ -34,6 +48,7 @@
 		92BC612C2C50FC52001B037A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		92BC612F2C50FC52001B037A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		92BC61312C50FC52001B037A /* ad_term.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ad_term.entitlements; sourceTree = "<group>"; };
+		92CE86C42DA90E7A00A93BCA /* term */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = term; sourceTree = "<group>"; };
 		92F6A83F2C53A68800346F1D /* Glyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glyph.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -42,6 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				92CE86C72DA90E8600A93BCA /* term in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -51,7 +67,9 @@
 		92BC61172C50FC51001B037A = {
 			isa = PBXGroup;
 			children = (
+				92CE86C42DA90E7A00A93BCA /* term */,
 				92BC61222C50FC51001B037A /* ad-term */,
+				92CE86C52DA90E8600A93BCA /* Frameworks */,
 				92BC61212C50FC51001B037A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -84,6 +102,13 @@
 			path = "ad-term";
 			sourceTree = "<group>";
 		};
+		92CE86C52DA90E8600A93BCA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -94,6 +119,7 @@
 				92BC611C2C50FC51001B037A /* Sources */,
 				92BC611D2C50FC51001B037A /* Frameworks */,
 				92BC611E2C50FC51001B037A /* Resources */,
+				92A54B272DA902B80008E997 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -111,8 +137,8 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1540;
-				LastUpgradeCheck = 1540;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					92BC611F2C50FC51001B037A = {
 						CreatedOnToolsVersion = 15.4;
@@ -214,6 +240,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -277,6 +304,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -308,6 +336,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 2AYGH8X8YK;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -338,6 +367,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 2AYGH8X8YK;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -380,6 +410,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		92CE86C62DA90E8600A93BCA /* term */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = term;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 92BC61182C50FC51001B037A /* Project object */;
 }
