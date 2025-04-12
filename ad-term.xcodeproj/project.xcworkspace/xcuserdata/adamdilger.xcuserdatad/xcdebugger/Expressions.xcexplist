@@ -3,50 +3,18 @@
    version = "1.0">
    <ContextStates>
       <ContextState
-         contextName = "GameViewController.sayHello():GameViewController.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "cells[idx]">
-            </PersistentString>
-         </PersistentStrings>
-      </ContextState>
-      <ContextState
-         contextName = "Terminal.insertLine():Terminal.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "self.cells.count">
-            </PersistentString>
-         </PersistentStrings>
-      </ContextState>
-      <ContextState
-         contextName = "Terminal.draw():Terminal.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "self.buffer.count">
-            </PersistentString>
-         </PersistentStrings>
-      </ContextState>
-      <ContextState
          contextName = "example():termTests.swift">
       </ContextState>
       <ContextState
-         contextName = "GameViewController.viewDidLoad():GameViewController.swift">
+         contextName = "closure #1 in TTY.run():TTY.swift">
          <PersistentStrings>
             <PersistentString
-               value = "mtkView.drawableSize">
+               value = "handler.availableData">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "multiline():termTests.swift">
-      </ContextState>
-      <ContextState
-         contextName = "Terminal.deleteLine():Terminal.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "self.cells.count">
-            </PersistentString>
-         </PersistentStrings>
+         contextName = "fill(_:_:_:cursor:width:):Renderer.swift">
       </ContextState>
       <ContextState
          contextName = "Parser.parseLines(lines:):term.swift">
@@ -60,10 +28,64 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "Terminal.insertLine():Terminal.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "self.cells.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Terminal.deleteLine():Terminal.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "self.cells.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "GameViewController.sayHello():GameViewController.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "cells[idx]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "GameViewController.viewDidLoad():GameViewController.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "mtkView.drawableSize">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Renderer.tick():Renderer.swift">
+      </ContextState>
+      <ContextState
          contextName = "Terminal.newLine():Terminal.swift">
          <PersistentStrings>
             <PersistentString
                value = "cells.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "multiline():termTests.swift">
+      </ContextState>
+      <ContextState
+         contextName = "Terminal.draw():Terminal.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "self.buffer.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "TTerminal.parseIncomingLines(_:):term.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "lines.last">
             </PersistentString>
          </PersistentStrings>
       </ContextState>

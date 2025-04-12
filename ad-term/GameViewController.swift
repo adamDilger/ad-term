@@ -7,13 +7,15 @@
 
 import Cocoa
 import MetalKit
+import term
 
 class GameViewController: NSViewController {
     var renderer: Renderer!
     var mtkView: MTKView!
 
-    var terminal: Terminal?;
-    
+    var terminal: TTerminal!;
+    var tty: TTY!;
+
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
@@ -25,13 +27,19 @@ class GameViewController: NSViewController {
             self.flagsChanged(with: $0)
             return $0
         }
+        
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
             self.keyDown(with: $0)
             return $0
         }
         
         let nc = NotificationCenter.default
-        nc.addObserver(self, selector: #selector(terminalDataUpdate(_:)), name: Notification.Name("TerminalDataUpdate"), object: nil)
+        nc.addObserver(
+            self,
+            selector: #selector(terminalDataUpdate(_:)),
+            name: Notification.Name("TerminalDataUpdate"),
+            object: nil
+        )
 
         guard let mtkView = self.view as? MTKView else {
             print("View attached to GameViewController is not an MTKView")
@@ -51,13 +59,16 @@ class GameViewController: NSViewController {
         let _c = Int(floor(_a))
         let _d = Int(floor(_b))
 
-        let WIDTH = _c;
-        let HEIGHT = _d;
+        let WIDTH = UInt16(_c);
+        let HEIGHT = UInt16(_d);
 
-        let t = Terminal(width: WIDTH, height: HEIGHT);
-        self.terminal = t;
+        let buf = Data()
+        self.terminal = TTerminal(buffer: buf)
+        self.terminal.resize(width: WIDTH, height: HEIGHT)
+        
+        self.tty = TTY(terminal);
 
-        guard let newRenderer = Renderer(metalKitView: mtkView, terminal: &self.terminal!) else {
+        guard let newRenderer = Renderer(metalKitView: mtkView, terminal: self.terminal) else {
             print("Renderer cannot be initialized")
             return
         }
@@ -67,17 +78,20 @@ class GameViewController: NSViewController {
 
         mtkView.delegate = renderer
         
-        t.tty!.run()
+        tty.run()
     }
     
     @objc func terminalDataUpdate(_ notification: Notification) {
         if renderer == nil { return; }
-        renderer.tick(terminal: self.terminal!);
+        renderer.tick();
     }
     
     override func keyDown(with event: NSEvent) {
         super.keyDown(with: event)
-        self.terminal?.tty!.keyDown(event: event)
+        
+        if let c: String = event.characters {
+            self.tty.keyDown(c)
+        }
     }
     
     override var acceptsFirstResponder: Bool {

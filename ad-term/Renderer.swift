@@ -7,6 +7,7 @@
 import Metal
 import MetalKit
 import simd
+import term
 
 struct Vertex {
     var position: simd_float2
@@ -36,12 +37,12 @@ class Renderer: NSObject, MTKViewDelegate {
     var vertices: [Vertex] = []
     var indices: [ushort] = []
     
-    var currentWidth = 0;
-    var currentHeight = 0;
+    var currentWidth: UInt16 = 0;
+    var currentHeight: UInt16 = 0;
     
-    var terminal: Terminal
+    var terminal: TTerminal
 
-    init?(metalKitView: MTKView, terminal: inout Terminal) {
+    init?(metalKitView: MTKView, terminal: TTerminal) {
         //Device and command queue
         self.device = metalKitView.device!
         self.commandQueue = self.device.makeCommandQueue()!
@@ -90,24 +91,6 @@ class Renderer: NSObject, MTKViewDelegate {
             print("Failed to create render pipeline state")
         }
         
-//        self.vertices = []
-//        self.indices = []
-//        fill(&self.vertices, &self.indices, &cells, cursor: point(x: 0, y: 0));
-//        
-//        self.vertexBuffer = self.device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride, options: MTLResourceOptions.storageModeShared)!
-//        self.indexBuffer = self.device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<ushort>.stride, options: MTLResourceOptions.storageModeShared)!
-//
-//
-//        let textureDescriptor = MTLTextureDescriptor.texture2DDescriptor(
-//            pixelFormat: .rgba8Unorm,
-//            width: fontWidth * 16,
-//            height: fontHeight * 16,
-//            mipmapped: true)
-//        self.fontTexture = device.makeTexture(descriptor: textureDescriptor)!
-//        
-//        for i in 32..<127 {
-//            GenerateGlyph(texture: self.fontTexture!, char: Character(UnicodeScalar(i)!))
-//        }
         super.init()
     }
     
@@ -137,7 +120,7 @@ class Renderer: NSObject, MTKViewDelegate {
             // Render
             renderEncoder.drawIndexedPrimitives(
                 type: MTLPrimitiveType.triangle,
-                indexCount: self.currentWidth * self.currentHeight * 6,
+                indexCount: Int(self.currentWidth) * Int(self.currentHeight) * 6,
                 indexType: MTLIndexType.uint16,
                 indexBuffer: indexBuffer,
                 indexBufferOffset: 0)
@@ -157,8 +140,8 @@ class Renderer: NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         let _a = size.width / CGFloat(fontWidth);
         let _b = size.height / CGFloat(fontHeight);
-        let _c = Int(floor(_a))
-        let _d = Int(floor(_b))
+        let _c = UInt16(floor(_a))
+        let _d = UInt16(floor(_b))
 
         print("new WIDTH \(_c)");
         print("new HEIGHT \(_d)");
@@ -166,24 +149,24 @@ class Renderer: NSObject, MTKViewDelegate {
         self.currentWidth = _c;
         self.currentHeight = _d;
         
-        terminal.resize(self.currentWidth, self.currentHeight)
+        terminal.resize(width: self.currentWidth, height: self.currentHeight)
         self.setupTexture()
-        self.terminal.tty!.resize(width: _c, height: _d)
+        // TODO: self.terminal.tty!.resize(width: _c, height: _d)
         terminal.draw();
     }
     
-    func tick(terminal: Terminal) {
+    func tick() {
         guard let vertexBuffer = self.vertexBuffer else { return; }
         self.vertices = [];
         self.indices = [];
-        fill(&self.vertices, &self.indices, &terminal.cells, cursor: terminal.cursor, width: self.currentWidth);
+        fill(&self.vertices, &self.indices, &terminal.cells, cursor: terminal.cursor, width: Int(self.currentWidth));
         vertexBuffer.contents().copyMemory(from: &self.vertices, byteCount: vertices.count * MemoryLayout<Vertex>.stride)
     }
     
     func setupTexture() {
         self.vertices = []
         self.indices = []
-        fill(&self.vertices, &self.indices, &self.terminal.cells, cursor: point(x: 0, y: 0), width: self.currentWidth);
+        fill(&self.vertices, &self.indices, &self.terminal.cells, cursor: self.terminal.cursor, width: Int(self.currentWidth));
         
         self.vertexBuffer = self.device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride, options: MTLResourceOptions.storageModeShared)!
         self.indexBuffer = self.device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<ushort>.stride, options: MTLResourceOptions.storageModeShared)!
@@ -199,13 +182,12 @@ class Renderer: NSObject, MTKViewDelegate {
         for i in 32..<127 {
             GenerateGlyph(texture: self.fontTexture!, char: Character(UnicodeScalar(i)!))
         }
-;
     }
 }
     
 let H: Float = 16
 let W: Float = 16
-func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout [Cell], cursor: point, width: Int) {
+func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout [Cell], cursor: Point, width: Int) {
     let height = cells.count / width;
     
     for i in 0..<height {
@@ -229,8 +211,7 @@ func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout 
             let y_0 = (((Float(i) / Float(height)) - 0.5) * -1) * 2;
             let y_1 = (((Float(i + 1) / Float(height)) - 0.5) * -1) * 2;
             
-            let cellChar = cell.char ?? " "
-            let cellCharAscii = cellChar.asciiValue ?? 0;
+            let cellCharAscii = cell.char ?? 0;
             
             let x_A = cellCharAscii % 16;
             let y_A = cellCharAscii / 16;

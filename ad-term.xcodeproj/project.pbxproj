@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		920F779A2C51160D004D4E6E /* font.png in Resources */ = {isa = PBXBuildFile; fileRef = 920F77992C51160D004D4E6E /* font.png */; };
-		92494C552C51F4EC005BC0CF /* TTY.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92494C522C51F4EC005BC0CF /* TTY.swift */; };
 		92494C562C51F4EC005BC0CF /* Terminal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92494C532C51F4EC005BC0CF /* Terminal.swift */; };
 		92494C572C51F4EC005BC0CF /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92494C542C51F4EC005BC0CF /* Constants.swift */; };
 		92BC61242C50FC51001B037A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92BC61232C50FC51001B037A /* AppDelegate.swift */; };
@@ -17,6 +16,7 @@
 		92BC612A2C50FC51001B037A /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 92BC61292C50FC51001B037A /* Shaders.metal */; };
 		92BC612D2C50FC52001B037A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 92BC612C2C50FC52001B037A /* Assets.xcassets */; };
 		92BC61302C50FC52001B037A /* Base in Resources */ = {isa = PBXBuildFile; fileRef = 92BC612F2C50FC52001B037A /* Base */; };
+		92C6C0FC2DA9B0BF00CD8F53 /* TTY.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C6C0FB2DA9B0BF00CD8F53 /* TTY.swift */; };
 		92CE86C72DA90E8600A93BCA /* term in Frameworks */ = {isa = PBXBuildFile; productRef = 92CE86C62DA90E8600A93BCA /* term */; };
 		92F6A8402C53A68800346F1D /* Glyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F6A83F2C53A68800346F1D /* Glyph.swift */; };
 /* End PBXBuildFile section */
@@ -36,7 +36,6 @@
 
 /* Begin PBXFileReference section */
 		920F77992C51160D004D4E6E /* font.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = font.png; sourceTree = "<group>"; };
-		92494C522C51F4EC005BC0CF /* TTY.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TTY.swift; sourceTree = "<group>"; };
 		92494C532C51F4EC005BC0CF /* Terminal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Terminal.swift; sourceTree = "<group>"; };
 		92494C542C51F4EC005BC0CF /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		92BC61202C50FC51001B037A /* ad-term.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ad-term.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -48,6 +47,7 @@
 		92BC612C2C50FC52001B037A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		92BC612F2C50FC52001B037A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		92BC61312C50FC52001B037A /* ad_term.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ad_term.entitlements; sourceTree = "<group>"; };
+		92C6C0FB2DA9B0BF00CD8F53 /* TTY.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTY.swift; sourceTree = "<group>"; };
 		92CE86C42DA90E7A00A93BCA /* term */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = term; sourceTree = "<group>"; };
 		92F6A83F2C53A68800346F1D /* Glyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glyph.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -90,7 +90,6 @@
 				92BC61252C50FC51001B037A /* GameViewController.swift */,
 				92494C542C51F4EC005BC0CF /* Constants.swift */,
 				92494C532C51F4EC005BC0CF /* Terminal.swift */,
-				92494C522C51F4EC005BC0CF /* TTY.swift */,
 				92BC61272C50FC51001B037A /* Renderer.swift */,
 				92BC61292C50FC51001B037A /* Shaders.metal */,
 				92BC612B2C50FC51001B037A /* ShaderTypes.h */,
@@ -98,6 +97,7 @@
 				92BC612E2C50FC52001B037A /* Main.storyboard */,
 				92BC61312C50FC52001B037A /* ad_term.entitlements */,
 				92F6A83F2C53A68800346F1D /* Glyph.swift */,
+				92C6C0FB2DA9B0BF00CD8F53 /* TTY.swift */,
 			);
 			path = "ad-term";
 			sourceTree = "<group>";
@@ -186,8 +186,8 @@
 				92F6A8402C53A68800346F1D /* Glyph.swift in Sources */,
 				92BC61282C50FC51001B037A /* Renderer.swift in Sources */,
 				92494C562C51F4EC005BC0CF /* Terminal.swift in Sources */,
+				92C6C0FC2DA9B0BF00CD8F53 /* TTY.swift in Sources */,
 				92494C572C51F4EC005BC0CF /* Constants.swift in Sources */,
-				92494C552C51F4EC005BC0CF /* TTY.swift in Sources */,
 				92BC61242C50FC51001B037A /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
