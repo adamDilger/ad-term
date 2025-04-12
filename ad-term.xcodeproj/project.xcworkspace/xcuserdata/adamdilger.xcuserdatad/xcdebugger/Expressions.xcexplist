@@ -6,6 +6,17 @@
          contextName = "example():termTests.swift">
       </ContextState>
       <ContextState
+         contextName = "Parser.parse(newData:):term.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = " String(decoding: newData, as: UTF8.self)">
+            </PersistentString>
+            <PersistentString
+               value = "UnicodeScalar(c)">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "closure #1 in TTY.run():TTY.swift">
          <PersistentStrings>
             <PersistentString
@@ -32,6 +43,14 @@
          <PersistentStrings>
             <PersistentString
                value = "self.cells.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Parser.parseEscapeCode(idx:):term.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "t.buf[idx]">
             </PersistentString>
          </PersistentStrings>
       </ContextState>

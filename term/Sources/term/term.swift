@@ -3,8 +3,16 @@
 
 import Foundation
 
-let ESCAPE = 27;
-let NEWLINE = Character("\n").asciiValue!
+struct chars {
+    static let BELL = 7;
+    static let BACKSPACE = 8;
+    static let CARRIAGE_RETURN = 13;
+    static let ESCAPE = 27
+    static let SQUARE_BRACKET_L = 91
+    static let BACKSLASH = 92
+    static let SQUARE_BRACKET_R = 93
+    static let NEWLINE = 10
+}
 
 public struct BufLine {
     public var s: Int;
@@ -53,6 +61,9 @@ public class TTerminal {
     var cx = 0;
     var cy = 0;
     
+    var scrollTop = 0;
+    var scrollBottom = 0;
+    
     public var cells: Array<Cell> = []
     
     private var parser: Parser!;
@@ -65,6 +76,7 @@ public class TTerminal {
     public func resize(width: UInt16, height: UInt16) {
         WIDTH = width
         HEIGHT = height
+        scrollBottom = Int(height - 1)
         cells = Array<Cell>(repeating: Cell(), count: Int(width * height));
         
         // TODO: redraw
@@ -138,27 +150,33 @@ class Parser {
         while idx < newData.count  {
             let c = newData[idx]
             
-            let cy = t.cy * Int(t.WIDTH)
-            
             // loop until either escape code or new line
-            if c == ESCAPE {
+            if c == chars.ESCAPE {
                 idx += 1
                 parseEscapeCode(idx: &idx)
-            } else if c == 7 /* bell */ {
+            } else if c == chars.BELL  {
                 // do nothing?
-            } else if c == 8 /* backspace */ {
+            } else if c == chars.BACKSPACE  {
                 idx += 1
                 t.cursor.x -= 1
                 t.cx -= 1
-            } else if c == NEWLINE {
+            } else if c == chars.CARRIAGE_RETURN {
+                idx += 1
+                t.cx = 0;
+                t.cursor.x = 0;
+            } else if c == chars.NEWLINE {
                 idx += 1
                 t.cx = 0
-                t.cy += 1
+                incY()
+                
+                t.cursor.x = t.cx
+                t.cursor.y = t.cy
             } else {
                 // normal char, print
                 // print(Character(UnicodeScalar(c)))
+                let yOffset = t.cy * Int(t.WIDTH)
                 idx += 1;
-                t.cells[cy + t.cx].char = c
+                t.cells[yOffset + t.cx].char = c
                 incX()
             }
         }
@@ -171,7 +189,7 @@ class Parser {
             while idx <= line.e {
                 // read until escape char
                 let cy = t.cy * Int(t.WIDTH)
-                while (idx <= line.e && t.buf[idx] != ESCAPE) {
+                while (idx <= line.e && t.buf[idx] != chars.ESCAPE) {
                     print(Character(UnicodeScalar(t.buf[idx])))
                     t.cells[cy + t.cx].char = t.buf[idx]
                     incX()
@@ -182,7 +200,7 @@ class Parser {
                     break;
                 }
 
-                if (t.buf[idx] == ESCAPE) {
+                if (t.buf[idx] == chars.ESCAPE) {
                     idx += 1;
                     parseEscapeCode(idx: &idx);
                 }
@@ -199,29 +217,77 @@ class Parser {
         t.cursor.x += 1
         if t.cx == t.WIDTH {
             t.cx = 0;
-            t.cy += 1;
-            if t.cy == t.HEIGHT { print("TODO: scroll") }
+            incY()
             
             t.cursor.x = 0
             t.cursor.y = t.cy
         }
     }
+    
+    func incY() {
+        let shouldScroll = t.cy == t.scrollBottom
+
+        if shouldScroll == false && t.cy + 1 < t.HEIGHT {
+            t.cy += 1;
+        }
+        
+        if shouldScroll {
+            let WIDTH = Int(t.WIDTH);
+            let HEIGHT = Int(t.HEIGHT);
+
+            // we're at the bottom of the grid, so don't "move down"
+            // everything will shift up instead
+            let a = t.cells[0 ..< (t.scrollTop * WIDTH)] // everything up until the scroll region, should be 0 for normal operation
+            let b = t.cells[((t.scrollTop + 1) * WIDTH) ..< ((t.scrollBottom + 1) * WIDTH)] // scroll region start + 1 (as we're 'scrolling', so skip first line)
+            let c = t.cells[((t.scrollTop) * WIDTH) ..< ((t.scrollTop + 1) * WIDTH)] // first line of scroll region
+            let d = t.scrollBottom == HEIGHT - 1
+                ? []
+            : t.cells[((t.scrollBottom + 1) * WIDTH)..<HEIGHT*WIDTH] // the rest
+
+            t.cells = Array(a + b + c + d)
+            clearRow(y: t.cy)
+        }
+    }
+
+    func clearCell(cell: inout Cell) {
+        cell.char = nil;
+        cell.bgColor = 40
+        cell.fgColor = 37
+        cell.inverted = false
+    }
+    
+    func clearRow(y: Int) {
+        let WIDTH = Int(t.WIDTH)
+        
+        for i in (WIDTH*y)..<(WIDTH*(y+1)) {
+            self.clearCell(cell: &t.cells[i])
+        }
+    }
 
     func parseEscapeCode(idx: inout Int) {
-        if (t.buf[idx] == ESCAPE) {
+        if (t.buf[idx] == chars.SQUARE_BRACKET_L) {
             idx += 1
             parseControlCode(idx: &idx)
         } else {
-            idx += 1
             print("Unknown escape code: \(Character(UnicodeScalar(t.buf[idx])))")
+            idx += 1
         }
     }
     
     func parseControlCode(idx: inout Int) {
+        var questionMark = false;
+        if (t.buf[idx] == Character("?").asciiValue) {
+            idx += 1
+            questionMark = true;
+        }
+        
         let number = readNumber(idx: &idx);
         if (t.buf[idx] == Character("m").asciiValue) {
             idx += 1;
             t.pen.fgColor = number;
+        } else {
+            print("Unknown control code: \(Character(UnicodeScalar(t.buf[idx])))")
+            idx += 1;
         }
     }
     
