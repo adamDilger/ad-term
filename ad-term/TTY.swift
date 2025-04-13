@@ -10,9 +10,10 @@ import AppKit
 import term
 
 public class TTY {
-    let task: Process
+    var task: Process
     let slaveFile: FileHandle
     public let masterFile: FileHandle
+    let callRender: () -> ()
     
     var ws: winsize
     
@@ -20,17 +21,18 @@ public class TTY {
     
     var masterFD = -1
     
-    public init(_ terminal: TTerminal) {
+    public init(_ terminal: TTerminal, callRender: @escaping () -> ()) {
         self.terminal = terminal;
         self.task = Process()
+        self.callRender = callRender
         
         var temp = Array<CChar>(repeating: 0, count: Int(PATH_MAX))
         var masterFD = Int32(-1)
         var slaveFD = Int32(-1)
         
         self.ws = winsize(
-            ws_row: terminal.HEIGHT,
-            ws_col: terminal.WIDTH,
+            ws_row: UInt16(terminal.HEIGHT),
+            ws_col: UInt16(terminal.WIDTH),
             ws_xpixel: 1000,
             ws_ypixel: 1000
         )
@@ -42,33 +44,32 @@ public class TTY {
         self.masterFile = FileHandle.init(fileDescriptor: masterFD)
         self.slaveFile = FileHandle.init(fileDescriptor: slaveFD)
         
-        self.task.executableURL = URL(fileURLWithPath: "/bin/bash")
-        self.task.arguments = ["-i"]; //, "-c"]; , "vi ~/.bashrc"]
+        self.task.executableURL = URL(fileURLWithPath: "/usr/bin/login")
+        self.task.arguments = ["-fpq", "adamdilger", "/bin/bash"]
         self.task.standardOutput = slaveFile
         self.task.standardInput = slaveFile
         self.task.standardError = slaveFile
     }
     
-    func resize(width: UInt16, height: UInt16) {
+    func resize(width: Int, height: Int) {
         self.ws.ws_col = UInt16(width)
         self.ws.ws_row = UInt16(height)
         
         let res = ioctl(self.masterFile.fileDescriptor, TIOCSWINSZ, &self.ws);
+        terminal.resize(width: width, height: height)
         print("RES: \(res)")
     }
     
     public func run() {
         masterFile.readabilityHandler = { handler in
             self.terminal.parseIncomingLines(handler.availableData)
-            self.terminal.draw()
-            
-            print("---")
-            for i in 0..<Int(self.terminal.WIDTH) {
-                if let c = self.terminal.cells[i].char {
-                    print(Character(UnicodeScalar(Int(c))!), terminator: "")
-                }
-            }
-            print("\n---")
+            self.callRender();
+
+//            print("----------------------------------------------------")
+//            for c in handler.availableData.enumerated() {
+//                print("\(Character(UnicodeScalar(c.element)))", terminator: "")
+//            }
+//            print("\n----------------------------------------------------")
         }
         
         do {

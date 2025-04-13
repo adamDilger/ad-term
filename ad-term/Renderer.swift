@@ -37,17 +37,19 @@ class Renderer: NSObject, MTKViewDelegate {
     var vertices: [Vertex] = []
     var indices: [ushort] = []
     
-    var currentWidth: UInt16 = 0;
-    var currentHeight: UInt16 = 0;
+    var currentWidth = 0;
+    var currentHeight = 0;
     
     var terminal: TTerminal
+    var tty: TTY
 
-    init?(metalKitView: MTKView, terminal: TTerminal) {
+    init?(metalKitView: MTKView, terminal: TTerminal, tty: TTY) {
         //Device and command queue
         self.device = metalKitView.device!
         self.commandQueue = self.device.makeCommandQueue()!
         self.terminal = terminal;
-        
+        self.tty = tty;
+
         //Vertex descriptor
         vertexDescriptor = MTLVertexDescriptor()
         
@@ -120,7 +122,7 @@ class Renderer: NSObject, MTKViewDelegate {
             // Render
             renderEncoder.drawIndexedPrimitives(
                 type: MTLPrimitiveType.triangle,
-                indexCount: Int(self.currentWidth) * Int(self.currentHeight) * 6,
+                indexCount: self.currentWidth * self.currentHeight * 6,
                 indexType: MTLIndexType.uint16,
                 indexBuffer: indexBuffer,
                 indexBufferOffset: 0)
@@ -140,8 +142,8 @@ class Renderer: NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         let _a = size.width / CGFloat(fontWidth);
         let _b = size.height / CGFloat(fontHeight);
-        let _c = UInt16(floor(_a))
-        let _d = UInt16(floor(_b))
+        let _c = Int(floor(_a))
+        let _d = Int(floor(_b))
 
         print("new WIDTH \(_c)");
         print("new HEIGHT \(_d)");
@@ -149,10 +151,9 @@ class Renderer: NSObject, MTKViewDelegate {
         self.currentWidth = _c;
         self.currentHeight = _d;
         
-        terminal.resize(width: self.currentWidth, height: self.currentHeight)
+        self.tty.resize(width: _c, height: _d)
         self.setupTexture()
-        // TODO: self.terminal.tty!.resize(width: _c, height: _d)
-        terminal.draw();
+        tick();
     }
     
     func tick() {
@@ -221,8 +222,8 @@ func fill(_ vertices: inout [Vertex], _ indices: inout [ushort], _ cells: inout 
             let cy0 = (Float(y_A) / H)
             let cy1 = (Float(y_A + 1) / H)
             
-            var bgColor = colours[cell.bgColor ?? 40] ?? Black
-            var fgColor = colours[cell.fgColor ?? 37] ?? White
+            var bgColor = colours[UInt16(cell.bgColor ?? 40)] ?? Black
+            var fgColor = colours[UInt16(cell.fgColor ?? 37)] ?? White
             
             if cell.inverted || isCursor {
                 let tmp = bgColor;

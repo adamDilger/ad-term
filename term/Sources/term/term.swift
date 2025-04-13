@@ -6,12 +6,53 @@ import Foundation
 struct chars {
     static let BELL = 7;
     static let BACKSPACE = 8;
+    static let NEWLINE = 10
     static let CARRIAGE_RETURN = 13;
     static let ESCAPE = 27
+    static let SEMI_COLON = 59
+    static let EQUALS = 61
+    static let GREATER_THAN = 62
+    static let QUESTION = 63
     static let SQUARE_BRACKET_L = 91
     static let BACKSLASH = 92
     static let SQUARE_BRACKET_R = 93
-    static let NEWLINE = 10
+    
+    static let A = 65
+    static let B = 66
+    static let C = 67
+    static let D = 68
+    static let E = 69
+    static let F = 70
+    static let G = 71
+    static let H = 72
+    static let I = 73
+    static let J = 74
+    static let K = 75
+    static let L = 76
+    static let M = 77
+    static let N = 78
+    static let O = 79
+    static let P = 80
+
+    static let a = 97
+    static let b = 98
+    static let c = 99
+    static let d = 100
+    static let e = 101
+    static let f = 102
+    static let g = 103
+    static let h = 104
+    static let i = 105
+    static let j = 106
+    static let k = 107
+    static let l = 108
+    static let m = 109
+    static let n = 110
+    static let o = 111
+    static let p = 112
+    static let q = 113
+    static let r = 114
+
 }
 
 public struct BufLine {
@@ -26,8 +67,8 @@ public struct BufLine {
 
 public struct Cell {
     public var char: UInt8?;
-    public var fgColor: UInt16?;
-    public var bgColor: UInt16?;
+    public var fgColor: Int?;
+    public var bgColor: Int?;
     public var inverted = false
 }
 
@@ -42,14 +83,14 @@ public struct Point {
 }
 
 public struct Pen {
-    var bgColor: Int = 0;
-    var fgColor: Int = 0;
+    var bgColor = 0;
+    var fgColor = 0;
     var inverted = false;
 }
 
 public class TTerminal {
-    public var WIDTH: UInt16 = 0;
-    public var HEIGHT: UInt16 = 0;
+    public var WIDTH = 0;
+    public var HEIGHT = 0;
     
     public var buf: Data;
     var lines: [BufLine] = []
@@ -58,14 +99,15 @@ public class TTerminal {
     public var pen = Pen()
     public var cursor = Point(x: 0, y: 0)
     
-    var cx = 0;
-    var cy = 0;
-    
     var scrollTop = 0;
     var scrollBottom = 0;
     
     public var cells: Array<Cell> = []
     
+    var alternateCells: Array<Cell>?
+    var alternateCursor: Point?
+    var alternatePen: Pen?
+
     private var parser: Parser!;
 
     public init(buffer: Data) {
@@ -73,17 +115,15 @@ public class TTerminal {
         parser = Parser(terminal: self)
     }
     
-    public func resize(width: UInt16, height: UInt16) {
+    public func resize(width: Int, height: Int) {
         WIDTH = width
         HEIGHT = height
-        scrollBottom = Int(height - 1)
-        cells = Array<Cell>(repeating: Cell(), count: Int(width * height));
+        scrollBottom = height - 1
+        cells = Array<Cell>(repeating: Cell(), count: width * height);
         
         // TODO: redraw
         cursor.x = 0
         cursor.y = 0
-        cx = 0
-        cy = 0
         
         // TODO: shouldn't parse the entire buffer, maybe the last so many lines?
         parser.parse(newData: buf)
@@ -91,11 +131,6 @@ public class TTerminal {
     
     public func parseIncomingLines(_ incoming: Data) {
         if incoming.count == 0 { return }
-        
-        /*
-         current line is not ended -> append
-         current line is ended -> create new
-         */
         
         if currentLineIndex == nil {
             if let ll = lines.last {
@@ -124,17 +159,6 @@ public class TTerminal {
         self.buf.append(incoming)
         self.parser.parse(newData: incoming)
     }
-
-    func parseLines(lines: Array<BufLine>) {
-        parser.parseLines(lines: lines);
-    }
-    
-    public func draw() {
-        // TODO
-        
-        let nc = NotificationCenter.default
-        nc.post(name: Notification.Name("TerminalDataUpdate"), object: nil)
-    }
 }
 
 class Parser {
@@ -149,86 +173,45 @@ class Parser {
         var idx = 0;
         while idx < newData.count  {
             let c = newData[idx]
-            
+            idx += 1
+
             // loop until either escape code or new line
             if c == chars.ESCAPE {
-                idx += 1
-                parseEscapeCode(idx: &idx)
+                parseEscapeCode(newData, idx: &idx)
             } else if c == chars.BELL  {
                 // do nothing?
             } else if c == chars.BACKSPACE  {
-                idx += 1
                 t.cursor.x -= 1
-                t.cx -= 1
             } else if c == chars.CARRIAGE_RETURN {
-                idx += 1
-                t.cx = 0;
                 t.cursor.x = 0;
             } else if c == chars.NEWLINE {
-                idx += 1
-                t.cx = 0
+                t.cursor.x = 0
                 incY()
-                
-                t.cursor.x = t.cx
-                t.cursor.y = t.cy
             } else {
                 // normal char, print
-                // print(Character(UnicodeScalar(c)))
-                let yOffset = t.cy * Int(t.WIDTH)
-                idx += 1;
-                t.cells[yOffset + t.cx].char = c
+                let yOffset = t.cursor.y * Int(t.WIDTH)
+                let ci = yOffset + t.cursor.x
+                t.cells[ci].char = c
+                t.cells[ci].fgColor = t.pen.fgColor
+                t.cells[ci].bgColor = t.pen.bgColor
                 incX()
             }
         }
     }
-
-    func parseLines(lines: Array<BufLine>) {
-        for line in lines {
-            var idx: Int = line.s;
-            
-            while idx <= line.e {
-                // read until escape char
-                let cy = t.cy * Int(t.WIDTH)
-                while (idx <= line.e && t.buf[idx] != chars.ESCAPE) {
-                    print(Character(UnicodeScalar(t.buf[idx])))
-                    t.cells[cy + t.cx].char = t.buf[idx]
-                    incX()
-                    idx += 1;
-                }
-                
-                if idx >= line.e {
-                    break;
-                }
-
-                if (t.buf[idx] == chars.ESCAPE) {
-                    idx += 1;
-                    parseEscapeCode(idx: &idx);
-                }
-            }
-            
-            // TODO: maybe this needs to check if there's a new line?
-            t.cy += 1;
-            t.cx = 0;
-        }
-    }
     
     func incX() {
-        t.cx += 1;
         t.cursor.x += 1
-        if t.cx == t.WIDTH {
-            t.cx = 0;
+        if t.cursor.x == t.WIDTH {
+            t.cursor.x = 0;
             incY()
-            
-            t.cursor.x = 0
-            t.cursor.y = t.cy
         }
     }
     
     func incY() {
-        let shouldScroll = t.cy == t.scrollBottom
+        let shouldScroll = t.cursor.y == t.scrollBottom
 
-        if shouldScroll == false && t.cy + 1 < t.HEIGHT {
-            t.cy += 1;
+        if shouldScroll == false && t.cursor.y + 1 < t.HEIGHT {
+            t.cursor.y += 1;
         }
         
         if shouldScroll {
@@ -242,10 +225,10 @@ class Parser {
             let c = t.cells[((t.scrollTop) * WIDTH) ..< ((t.scrollTop + 1) * WIDTH)] // first line of scroll region
             let d = t.scrollBottom == HEIGHT - 1
                 ? []
-            : t.cells[((t.scrollBottom + 1) * WIDTH)..<HEIGHT*WIDTH] // the rest
+                : t.cells[((t.scrollBottom + 1) * WIDTH)..<HEIGHT*WIDTH] // the rest
 
             t.cells = Array(a + b + c + d)
-            clearRow(y: t.cy)
+            clearRow(y: t.cursor.y)
         }
     }
 
@@ -257,49 +240,244 @@ class Parser {
     }
     
     func clearRow(y: Int) {
-        let WIDTH = Int(t.WIDTH)
+        let WIDTH = t.WIDTH
         
         for i in (WIDTH*y)..<(WIDTH*(y+1)) {
             self.clearCell(cell: &t.cells[i])
         }
     }
 
-    func parseEscapeCode(idx: inout Int) {
-        if (t.buf[idx] == chars.SQUARE_BRACKET_L) {
-            idx += 1
-            parseControlCode(idx: &idx)
+    func parseEscapeCode(_ input: Data, idx: inout Int) {
+        if idx == input.count {
+            print("CANNOT PARSE ESCAPE CODE")
+            return
+        }
+        
+        let c = input[idx]
+        idx += 1
+        
+        if c == chars.SQUARE_BRACKET_L {
+            parseControlCode(input, idx: &idx)
+        } else if c == chars.SQUARE_BRACKET_R {
+            parseOperatingSystemControl(input, idx: &idx)
+        } else if c == chars.EQUALS {
+            print("Application Keypad (DECPAM)")
         } else {
-            print("Unknown escape code: \(Character(UnicodeScalar(t.buf[idx])))")
-            idx += 1
+            print("Unknown escape code: \(Character(UnicodeScalar(c)))")
         }
     }
     
-    func parseControlCode(idx: inout Int) {
+    func parseControlCode(_ input: Data, idx: inout Int) {
         var questionMark = false;
-        if (t.buf[idx] == Character("?").asciiValue) {
+        if input[idx] == chars.QUESTION {
             idx += 1
             questionMark = true;
         }
         
-        let number = readNumber(idx: &idx);
-        if (t.buf[idx] == Character("m").asciiValue) {
+        if input[idx] == chars.GREATER_THAN {
+            // unsure
+            idx += 1
+            print("CSI >")
+        }
+        
+        var numbers = [readNumber(input, idx: &idx), 0, 0, 0]
+        var numCount = 1
+        
+        while input[idx] == chars.SEMI_COLON {
+            idx += 1
+            numbers[numCount] = readNumber(input, idx: &idx)
+            numCount += 1
+        }
+        
+        if questionMark {
+            if input[idx] == chars.h {
+                idx += 1
+                switch numbers[0] {
+                case 1049:
+                    t.alternateCells = t.cells
+                    t.alternatePen = t.pen
+                    t.alternateCursor = t.cursor
+                    
+                    t.cells = [Cell](repeating: Cell(), count: t.WIDTH * t.HEIGHT);
+                    t.pen = Pen()
+                    t.pen.fgColor = 37
+                    t.pen.bgColor = 40
+                    t.cursor = Point(x: 0, y: 0)
+                case 12:
+                    print("Start Blinking Cursor (att610)")
+                case 25:
+                    print("TODO: Shows the cursor")
+                default:
+                    print("Unknown CSI number for ? h: \(numbers[0])")
+                }
+            } else if input[idx] == chars.l {
+                idx += 1
+                switch numbers[0] {
+                case 1049:
+                    guard let pen = t.alternatePen, let cells = t.alternateCells, let cursor = t.alternateCursor else {
+                        print("Invalid alternative cells data")
+                        break
+                    }
+                    t.cells = cells
+                    t.pen = pen
+                    t.cursor = cursor
+                    
+                    t.alternateCells = nil
+                    t.alternatePen = nil
+                    t.alternateCursor = nil
+                case 12:
+                    print("Stop Blinking Cursor (att610)")
+                case 25:
+                    print("TODO: Hide the cursor")
+                default:
+                    print("Unknown CSI number for ? h: \(numbers[0])")
+                }
+            } else {
+                print("Unknown CSI from question mark: \(Character(UnicodeScalar(input[idx])))")
+                idx += 1
+            }
+        
+            return;
+        }
+        
+        if input[idx] == chars.m {
             idx += 1;
-            t.pen.fgColor = number;
+            for ni in 0..<numCount {
+                let number = numbers[ni]
+                switch number {
+                case 30...37:
+                    print("setting FG colour to \(number)")
+                    t.pen.fgColor = number
+                case 39:
+                    print("setting FG colour to default: 37")
+                    t.pen.fgColor = 37 /* default: white */
+                case 40...47:
+                    print("setting BG colour to \(number)")
+                    t.pen.bgColor = number
+                case 49:
+                    print("setting BG colour to default: 40")
+                    t.pen.bgColor = 40 /* default: black */
+                default:
+                    print("Unknown CSI number for m: \(number)")
+                }
+            }
+        } else if input[idx] == chars.r {
+            idx += 1
+            t.scrollTop = numbers[0] - 1
+            t.scrollBottom = numbers[1] - 1
+            print("updating scroll region: \(numbers)")
+        } else if input[idx] == chars.C {
+            idx += 1
+            print("moving cursor \(numbers[0]) forward")
+            t.cursor.x += numbers[0]
+        } else if input[idx] == chars.H {
+            idx += 1
+            let n = numbers[0] == 0 ? 1 : numbers[0]
+            let m = numbers[1] == 0 ? 1 : numbers[1]
+            t.cursor.y = n - 1
+            t.cursor.x = m - 1
+            print("moving cursor to \(n):\(m)")
+        } else if input[idx] == chars.J {
+            idx += 1
+            switch numbers[0] {
+            case 0:
+                print("0J")
+                for i in t.cursor.x ..< t.WIDTH { clearCell(cell: &t.cells[i] ) }
+            case 1:
+                print("1J")
+                for i in 0 ... t.cursor.x { clearCell(cell: &t.cells[i] ) }
+            case 2:
+                print("2J")
+                for i in 0 ..< t.HEIGHT { clearRow(y: i) }
+            default:
+                print("Unknown CSI number for J: \(numbers[0])")
+            }
+        } else if (input[idx] == chars.K) {
+            idx += 1
+            let n = numbers[0]
+            if n == 0 {
+                print("[\(n)K -- y: \(t.cursor.y) | x: \(t.cursor.x) to WIDTH")
+                // If n is 0 (or missing), clear from cursor to the end of the line.
+                // for c in x..<WIDTH { self.cells[c + (ay * WIDTH)].char = nil }
+                for c in t.cursor.x..<t.WIDTH { clearCell(cell: &t.cells[c + (t.cursor.y * t.WIDTH)]) }
+            } else if n == 1 {
+                print("[\(n)K -- 0 to \(t.cursor.x)")
+                // If n is 1, clear from cursor to beginning of the line.
+                for c in 0..<idx { clearCell(cell: &t.cells[c + (t.cursor.y * t.WIDTH)]) }
+            } else {
+                print("[\(n)K -- CLEAR")
+                // If n is 2, clear entire line. Cursor position does not change.
+                for c in 0..<t.WIDTH { clearCell(cell: &t.cells[c + (t.cursor.y * t.WIDTH)]) }
+            }
+            
+            
+        } else if input[idx] == chars.L {
+            idx += 1;
+            let n = numbers[0] == 0 ? 1 : numbers[0]
+            
+            for _ in 0..<n {
+                insertLine()
+            }
+        } else if input[idx] == chars.M {
+            idx += 1;
+            let n = numbers[0] == 0 ? 1 : numbers[0]
+            
+            for _ in 0..<n {
+                deleteLine()
+            }
+        } else if (input[idx] == chars.P) {
+            idx += 1
+            // delete chars
+            print("Deleting \(numbers[0]) chars")
+            let yOffset = t.cursor.y * t.WIDTH
+            for i in t.cursor.x..<t.WIDTH {
+                t.cells[yOffset + i] = t.cells[yOffset + i + numbers[0]]
+            }
         } else {
-            print("Unknown control code: \(Character(UnicodeScalar(t.buf[idx])))")
+            print("Unknown control code: \(Character(UnicodeScalar(input[idx]))) : \(numbers)")
             idx += 1;
         }
     }
     
-    func readNumber(idx: inout Int) -> Int {
+    func parseOperatingSystemControl(_ input: Data, idx: inout Int) {
+        var numbers = [readNumber(input, idx: &idx), 0, 0, 0]
+        var numCount = 1
+        
+        while input[idx] == chars.SEMI_COLON {
+            idx += 1
+            numbers[numCount] = readNumber(input, idx: &idx)
+            numCount += 1
+        }
+        
+        var questionMark = false;
+        if input[idx] == chars.QUESTION {
+            idx += 1
+            questionMark = true;
+        }
+        
+        if questionMark {
+            print("todo: send back appropriate colour")
+        }
+
+        if input[idx] == chars.BELL {
+            idx += 1;
+            print("OSC ] \(numbers)")
+        } else {
+            print("unknown osc \(UnicodeScalar(input[idx]))")
+        }
+    }
+
+    
+    func readNumber(_ input: Data, idx: inout Int) -> Int {
         var numbers = [Int](repeating: 0, count: 10)
         var count = 0;
         
-        while (t.buf[idx] >= Character("0").asciiValue! && t.buf[idx] <= Character("9").asciiValue!) {
-            numbers[count] = Int(t.buf[idx]) - 48;
-            count += 1;
-            
-            idx += 1;
+        let zero = 48
+        let nine = 57
+        while (idx < input.count && input[idx] >= zero && input[idx] <= nine) {
+            numbers[count] = Int(input[idx]) - zero
+            count += 1
+            idx += 1
         }
         
         if (count == 0) {
@@ -314,5 +492,43 @@ class Parser {
         }
         
         return curr;
-    };
+    }
+    
+    func deleteLine() {
+        // get 0 to < y
+        let a = t.cells[0 ..< (t.cursor.y * t.WIDTH)]
+        
+        // get the rest of the scroll region (-1)
+        let b = t.cells[((t.cursor.y + 1) * t.WIDTH) ..< ((t.scrollBottom + 1) * t.WIDTH)]
+        
+        // get the current y line (this will be cleared)
+        let c = t.cells[(t.cursor.y * t.WIDTH) ..< ((t.cursor.y + 1) * t.WIDTH)]
+        
+        let d = t.scrollBottom == t.HEIGHT - 1
+        ? []
+        : t.cells[((t.scrollBottom + 1) * t.WIDTH)..<t.HEIGHT*t.WIDTH] // the rest
+        
+        t.cells = Array(a + b + c + d)
+        clearRow(y: t.scrollBottom)
+    }
+    
+    func insertLine() {
+        // get 0 to < y
+        let a = t.cells[0 ..< (t.cursor.y * t.WIDTH)]
+        
+        // get last line of scroll region, this is the "new" line
+        let b = t.cells[(t.scrollBottom * t.WIDTH) ..< ((t.scrollBottom + 1) * t.WIDTH)]
+        
+        // get the rest of the scroll region (-1)
+        let c = t.cells[((t.cursor.y) * t.WIDTH) ..< ((t.scrollBottom) * t.WIDTH)]
+        
+        let d = t.scrollBottom == t.HEIGHT - 1
+        ? []
+        : t.cells[((t.scrollBottom + 1) * t.WIDTH)..<t.HEIGHT*t.WIDTH] // the rest
+        
+        
+        t.cells = Array(a + b + c + d)
+        clearRow(y: t.cursor.y)
+    }
+    
 };

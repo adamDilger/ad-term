@@ -6,13 +6,10 @@
          contextName = "example():termTests.swift">
       </ContextState>
       <ContextState
-         contextName = "Parser.parse(newData:):term.swift">
+         contextName = "Terminal.draw():Terminal.swift">
          <PersistentStrings>
             <PersistentString
-               value = " String(decoding: newData, as: UTF8.self)">
-            </PersistentString>
-            <PersistentString
-               value = "UnicodeScalar(c)">
+               value = "self.buffer.count">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
@@ -39,6 +36,14 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "Parser.parseControlCode(_:idx:):term.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "(idx-2...idx+8).map { i in UnicodeScalar(input[i]) }">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "Terminal.insertLine():Terminal.swift">
          <PersistentStrings>
             <PersistentString
@@ -47,10 +52,32 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "Parser.parseOperatingSystemControl(_:idx:):term.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "input[idx]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "Parser.parseEscapeCode(idx:):term.swift">
          <PersistentStrings>
             <PersistentString
                value = "t.buf[idx]">
+            </PersistentString>
+            <PersistentString
+               value = "UnicodeScalar(t.buf[idx])">
+            </PersistentString>
+            <PersistentString
+               value = "UnicodeScalar(t.buf[idx - 1])">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "GameViewController.keyDown(with:):GameViewController.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "event.keyCode">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
@@ -79,6 +106,31 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "Parser.readNumber(_:idx:):term.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "String(decoding: input, as: UTF8.self)">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Parser.parse(newData:):term.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "Character(UnicodeScalar(newData[idx + 1])).asciiValue">
+            </PersistentString>
+            <PersistentString
+               value = "UnicodeScalar(c)">
+            </PersistentString>
+            <PersistentString
+               value = "(idx-4...idx+10).map { i in UnicodeScalar(newData[i]) }">
+            </PersistentString>
+            <PersistentString
+               value = " String(decoding: newData, as: UTF8.self)">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "Renderer.tick():Renderer.swift">
       </ContextState>
       <ContextState
@@ -91,14 +143,6 @@
       </ContextState>
       <ContextState
          contextName = "multiline():termTests.swift">
-      </ContextState>
-      <ContextState
-         contextName = "Terminal.draw():Terminal.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "self.buffer.count">
-            </PersistentString>
-         </PersistentStrings>
       </ContextState>
       <ContextState
          contextName = "TTerminal.parseIncomingLines(_:):term.swift">

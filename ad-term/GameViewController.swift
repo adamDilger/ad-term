@@ -33,14 +33,6 @@ class GameViewController: NSViewController {
             return $0
         }
         
-        let nc = NotificationCenter.default
-        nc.addObserver(
-            self,
-            selector: #selector(terminalDataUpdate(_:)),
-            name: Notification.Name("TerminalDataUpdate"),
-            object: nil
-        )
-
         guard let mtkView = self.view as? MTKView else {
             print("View attached to GameViewController is not an MTKView")
             return
@@ -59,16 +51,16 @@ class GameViewController: NSViewController {
         let _c = Int(floor(_a))
         let _d = Int(floor(_b))
 
-        let WIDTH = UInt16(_c);
-        let HEIGHT = UInt16(_d);
+        let WIDTH = _c;
+        let HEIGHT = _d;
 
         let buf = Data()
         self.terminal = TTerminal(buffer: buf)
         self.terminal.resize(width: WIDTH, height: HEIGHT)
         
-        self.tty = TTY(terminal);
+        self.tty = TTY(terminal, callRender: { self.renderer.tick() });
 
-        guard let newRenderer = Renderer(metalKitView: mtkView, terminal: self.terminal) else {
+        guard let newRenderer = Renderer(metalKitView: mtkView, terminal: self.terminal, tty: self.tty) else {
             print("Renderer cannot be initialized")
             return
         }
@@ -88,6 +80,15 @@ class GameViewController: NSViewController {
     
     override func keyDown(with event: NSEvent) {
         super.keyDown(with: event)
+       
+        switch event.keyCode {
+        case /* KEY_UP */ 126: self.tty.keyDown("\u{1b}[A"); return;
+        case /* KEY_DOWN */ 125: self.tty.keyDown("\u{1b}[B"); return;
+        case /* KEY_LEFT */ 123: self.tty.keyDown("\u{1b}[D"); return;
+        case /* KEY_RIGHT */ 124: self.tty.keyDown("\u{1b}[C"); return;
+        default: break;
+        }
+        
         
         if let c: String = event.characters {
             self.tty.keyDown(c)
