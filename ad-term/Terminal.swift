@@ -10,43 +10,43 @@ import Foundation
 // var WIDTH = 80;
 // var HEIGHT = 24;
 
-//struct Cell {
+// struct Cell {
 //    var char: Character?;
 //    var fgColor: UInt16?;
 //    var bgColor: UInt16?;
 //    var inverted = false
-//}
+// }
 //
-//struct line {
+// struct line {
 //    var start: Int;
 //    var end: Int;
-//}
+// }
 //
-//struct point {
+// struct point {
 //    var x: Int
 //    var y: Int
-//}
+// }
 //
-//class Terminal {
+// class Terminal {
 //    var tty: TTY?;
 //    var cells = Array<Cell>();
-//    
+//
 //    var fgColor: UInt16 = 0;
 //    var bgColor: UInt16 = 0;
 //    var inverted = false;
-//    
+//
 //    var alternateCells = Array<Cell>();
 //    var alternateX = 0;
 //    var alternateY = 0;
 //
 //    var cursor = point(x: 0, y: 0)
 //    var currentLineBufferIndex = 0;
-//    
+//
 //    var buffer: Data
-//    
+//
 //    var scrollTop: Int;
 //    var scrollBottom: Int;
-//    
+//
 //    var WIDTH: Int;
 //    var HEIGHT: Int;
 //
@@ -55,14 +55,14 @@ import Foundation
 //        self.HEIGHT = height;
 //        self.buffer = Data()
 //        for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
-//        
+//
 //        self.scrollTop = 0;
 //        self.scrollBottom = HEIGHT - 1;
-//        
+//
 //        self.WIDTH = width;
 //        self.HEIGHT = height;
 //    }
-//    
+//
 //    func resize(_ width: Int, _ height: Int) {
 //        if self.scrollBottom == HEIGHT - 1 {
 //            self.scrollBottom = height - 1;
@@ -73,25 +73,25 @@ import Foundation
 //
 //        self.cells = [];
 //        for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
-//        
+//
 //        self.currentLineBufferIndex = 0;
 //        self.cursor = point(x: 0, y: 0)
-//        
+//
 //    }
-//    
+//
 //    func clearCell(cell: inout Cell) {
 //        cell.char = nil;
 //        cell.bgColor = 40
 //        cell.fgColor = 37
 //        cell.inverted = false
 //    }
-//    
+//
 //    func clearRow(y: Int) {
 //        for i in (WIDTH*y)..<(WIDTH*(y+1)) {
 //            self.clearCell(cell: &self.cells[i])
 //        }
 //    }
-//    
+//
 //    func peek(_ idx: Int, by: Int = 1) -> UInt8? {
 //        return idx + by < self.buffer.count ? self.buffer[idx + by] : nil;
 //    }
@@ -101,10 +101,10 @@ import Foundation
 //        while idx < self.buffer.count {
 //            // print(String(decoding: data[s..<e], as: UTF8.self))
 //            let b = self.buffer[idx];
-//            
+//
 //            if b == ASC_ESC {
 //                let peek = self.peek(idx)
-//                
+//
 //                if peek == ASC_L_SQUARE {
 //                    idx += 1;
 //                    self.readControlCode(idx: &idx);
@@ -119,18 +119,18 @@ import Foundation
 //                        p1 = self.peek(idx, by: 1)
 //                        p2 = self.peek(idx, by: 2)
 //                    }
-//                    
+//
 //                    idx += 2 // skip over peeks
 //                    print("TODO: esc P")
 //                } else if peek == ASC_R_SQUARE {
 //                    idx += 1
 //                    var p1 = self.peek(idx)
-//                    
+//
 //                    while p1 != ASC_BELL {
 //                        idx += 1
 //                        p1 = self.peek(idx)
 //                    }
-//                    
+//
 //                    idx += 1 // skip over peeks
 //                    print("TODO: esc ]");
 //                } else {
@@ -147,7 +147,7 @@ import Foundation
 //                cursor.x -= 1;
 //            } else {
 //                var cellIndex = cursor.x + (cursor.y * WIDTH)
-//                
+//
 //                if b == tab {
 //                    // insert tab chars to next multiple of 8
 //                    repeat {
@@ -166,53 +166,53 @@ import Foundation
 //                    self.cells[cellIndex].fgColor = fgColor
 //                    self.cells[cellIndex].inverted = inverted
 //                    self.cells[cellIndex].char = Character(UnicodeScalar(b));
-//                    
+//
 //                    if cursor.x + 1 == WIDTH {
 //                        cursor.x = 0;
-//                        
+//
 //                        self.newLine();
 //                    } else {
 //                        cursor.x += 1;
 //                    }
 //                }
 //            }
-//            
+//
 //            idx += 1;
 //        }
-//        
+//
 //        currentLineBufferIndex = self.buffer.count;
 //
 //        let nc = NotificationCenter.default
 //        nc.post(name: Notification.Name("TerminalDataUpdate"), object: nil)
 //    }
-//    
+//
 //    func describe() {
 //        var out: [Character] = []
-//        
+//
 //        out += "------------------------------------";
-//        
+//
 //        for i in 0..<HEIGHT {
 //            out += "\(i)  |";
-//            
+//
 //            for j in 0..<WIDTH {
 //                out.append(self.cells[j + (i*WIDTH)].char ?? Character(" "));
 //            }
 //            out += "\n";
 //        }
-//        
+//
 //        print(String(out) + "------------------------------------");
 //    }
-//    
+//
 //    func deleteLine() {
 //        // get 0 to < y
 //        let a = self.cells[0 ..< (self.cursor.y * WIDTH)]
-//        
+//
 //        // get the rest of the scroll region (-1)
 //        let b = self.cells[((self.cursor.y + 1) * WIDTH) ..< ((self.scrollBottom + 1) * WIDTH)]
-//        
+//
 //        // get the current y line (this will be cleared)
 //        let c = self.cells[(self.cursor.y * WIDTH) ..< ((self.cursor.y + 1) * WIDTH)]
-//        
+//
 //        let d = self.scrollBottom == HEIGHT - 1
 //            ? []
 //            : self.cells[((self.scrollBottom + 1) * WIDTH)..<HEIGHT*WIDTH] // the rest
@@ -220,22 +220,22 @@ import Foundation
 //        self.cells = Array(a + b + c + d)
 //        self.clearRow(y: self.scrollBottom)
 //    }
-//    
+//
 //    func insertLine() {
 //        // get 0 to < y
 //        let a = self.cells[0 ..< (self.cursor.y * WIDTH)]
-//        
+//
 //        // get last line of scroll region, this is the "new" line
 //        let b = self.cells[(self.scrollBottom * WIDTH) ..< ((self.scrollBottom + 1) * WIDTH)]
-//        
+//
 //        // get the rest of the scroll region (-1)
 //        let c = self.cells[((self.cursor.y) * WIDTH) ..< ((self.scrollBottom) * WIDTH)]
-//        
+//
 //        let d = self.scrollBottom == HEIGHT - 1
 //            ? []
 //            : self.cells[((self.scrollBottom + 1) * WIDTH)..<HEIGHT*WIDTH] // the rest
 //
-//        
+//
 //        self.cells = Array(a + b + c + d)
 //        self.clearRow(y: self.cursor.y)
 //    }
@@ -246,7 +246,7 @@ import Foundation
 //        if shouldScroll == false && self.cursor.y + 1 < HEIGHT {
 //            self.cursor.y += 1;
 //        }
-//        
+//
 //        if shouldScroll {
 //            // we're at the bottom of the grid, so don't "move down"
 //            // everything will shift up instead
@@ -261,17 +261,17 @@ import Foundation
 //            self.clearRow(y: self.cursor.y)
 //        }
 //    }
-//    
+//
 //    func readControlCode(idx: inout Int) {
 //        var peek = self.peek(idx)
-//        
+//
 //        if peek == nil { return; }
 //
 //        var questionMark = false;
 ////        var greaterThan = false;
 ////        var lessThan = false;
 ////        var equals = false;
-//        
+//
 //        while peek! >= ASC_LESS_THAN && peek! <= ASC_QUESTION_MARK {
 //            switch peek {
 //            case ASC_QUESTION_MARK: questionMark = true;
@@ -280,37 +280,37 @@ import Foundation
 ////            case ASC_EQUALS: equals = true;
 //            default: print("UNKNOWN: \(peek!)");
 //            }
-//            
+//
 //            idx += 1;
 //            peek = self.peek(idx)
 //        }
-//        
+//
 //        if peek == nil { return; }
 //
 //        // we've parsed some rando characters, now parse out the number array
 //        var numbers: [UInt16] = [0, 0, 0, 0]
-//        
+//
 //        var ni = 0;
 //        while peek == ASC_SEMI_COLON || (ASC_0 <= peek! && peek! <= ASC_9) {
 //            while peek != nil && ASC_0 <= peek! && peek! <= ASC_9 {
 //                numbers[ni] *= 10
 //                numbers[ni] += UInt16(peek! - ASC_0)
-//                
+//
 //                idx += 1;
 //                peek = self.peek(idx);
 //            }
-//            
+//
 //            if peek == ASC_SEMI_COLON {
 //                ni += 1
 //                idx += 1;
 //                peek = self.peek(idx);
 //            }
-//            
+//
 //            if peek == nil { return; }
 //        }
-//        
+//
 //        if peek == nil { return; }
-//        
+//
 //        if peek == ASC_C {
 //            // move cursor right
 //            idx += 1;
@@ -318,26 +318,26 @@ import Foundation
 //            cursor.x += Int(n)
 //        } else if peek == ASC_h {
 //            idx += 1;
-//            
+//
 //            let n = numbers[0] == 0 ? 1 : numbers[0]
 //
 //            if n == 1049 {
 //                self.alternateCells = self.cells;
 //                self.alternateX = cursor.x;
 //                self.alternateY = cursor.y;
-//                
+//
 //                self.cells = Array();
 //                for _ in 0..<WIDTH*HEIGHT { self.cells.append(Cell()); }
 //                cursor.x = 0;
 //                cursor.y = 0;
-//                
+//
 //                print("Alternate Buffer: ON")
 //            } else {
 //                print("\(questionMark ? "?" : "")\(n)h")
 //            }
 //        } else if peek == ASC_l {
 //            idx += 1;
-//            
+//
 //            let n = numbers[0] == 0 ? 1 : numbers[0]
 //
 //            if n == 1049 {
@@ -345,14 +345,14 @@ import Foundation
 //                self.alternateCells = Array();
 //                cursor.x = self.alternateX;
 //                cursor.y = self.alternateY;
-//                
+//
 //                print("Alternate Buffer: OFF")
 //            } else {
 //                print("UNKWOWN \(n)l")
 //            }
 //        } else if peek == ASC_K {
 //            idx += 1
-//            
+//
 //            let n = numbers[0]
 //            if n == 0 {
 //                print("[\(n)K -- y: \(cursor.y) | x: \(cursor.x) to WIDTH")
@@ -370,17 +370,17 @@ import Foundation
 //            }
 //        } else if peek == ASC_H {
 //            idx += 1;
-//            
+//
 //            let n = numbers[0] == 0 ? 1 : numbers[0]
 //            let m = numbers[1] == 0 ? 1 : numbers[1]
-//            
+//
 //            print("\(n);\(m)H")
-//            
+//
 //            cursor.x = Int(m) - 1;
 //            cursor.y = Int(n) - 1;
 //        } else if peek == ASC_J {
 //            idx += 1;
-//            
+//
 //            let n = numbers[0]
 //
 //            if n == 0 {
@@ -393,25 +393,25 @@ import Foundation
 //                // If n is 2, clear entire screen
 //                // If n is 3, clear entire screen and delete all lines saved in the scrollback buffer
 //                print("TODO: // [\(n)J")
-//                
+//
 //                for i in 0..<WIDTH*HEIGHT {
 //                    clearCell(cell: &self.cells[i]);
 //                }
 //            }
 //        } else if peek == ASC_m && numbers[1] > 0 {
 //            idx += 1;
-//            
+//
 //            let n = numbers[0]
 //            let m = numbers[1]
-//            
+//
 //            print("TODO: [\(n);\(m)m")
 //        } else if peek == ASC_m {
 //            idx += 1;
-//            
+//
 //            let n = numbers[0]
 //
 //            switch (n) {
-//            case 0:  
+//            case 0:
 //                fgColor = 37
 //                bgColor = 40
 //                inverted = false;
@@ -441,20 +441,20 @@ import Foundation
 //
 //        } else if peek == ASC_r {
 //            idx += 1;
-//            
+//
 //            let n = numbers[0] == 0 ? 1 : numbers[0]
 //            let m = numbers[1] == 0 ? UInt16(HEIGHT) : numbers[1]
-//            
+//
 //            self.scrollTop = Int(n - 1);
 //            self.scrollBottom = Int(m - 1);
 //            print("Setting scroll bounds: [\(n);\(m)r")
 //        } else if peek == ASC_t {
 //            idx += 1;
-//            
+//
 //            let n = numbers[0]
 //            let m = numbers[1]
 //            let o = numbers[2]
-//            
+//
 //            print("TODO: [\(n);\(m);\(o)t")
 //        } else if peek == ASC_L {
 //            idx += 1;
@@ -475,4 +475,4 @@ import Foundation
 //            print("----- UNKNOWN CSI: [\(Character(UnicodeScalar(self.buffer[idx])))")
 //        }
 //    }
-//}
+// }

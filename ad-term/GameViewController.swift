@@ -13,27 +13,27 @@ class GameViewController: NSViewController {
     var renderer: Renderer!
     var mtkView: MTKView!
 
-    var terminal: TTerminal!;
-    var tty: TTY!;
+    var terminal: TTerminal!
+    var tty: TTY!
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) {
             self.flagsChanged(with: $0)
             return $0
         }
-        
+
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
             self.keyDown(with: $0)
             return $0
         }
-        
-        guard let mtkView = self.view as? MTKView else {
+
+        guard let mtkView = view as? MTKView else {
             print("View attached to GameViewController is not an MTKView")
             return
         }
@@ -46,21 +46,21 @@ class GameViewController: NSViewController {
 
         mtkView.device = defaultDevice
 
-        let _a = mtkView.drawableSize.width / CGFloat(fontWidth);
-        let _b = mtkView.drawableSize.height / CGFloat(fontHeight);
+        let _a = mtkView.drawableSize.width / CGFloat(fontWidth)
+        let _b = mtkView.drawableSize.height / CGFloat(fontHeight)
         let _c = Int(floor(_a))
         let _d = Int(floor(_b))
 
-        let WIDTH = _c;
-        let HEIGHT = _d;
+        let WIDTH = _c
+        let HEIGHT = _d
 
         let buf = Data()
-        self.terminal = TTerminal(buffer: buf)
-        self.terminal.resize(width: WIDTH, height: HEIGHT)
-        
-        self.tty = TTY(terminal, callRender: { self.renderer.tick() });
+        terminal = TTerminal(buffer: buf)
+        terminal.resize(width: WIDTH, height: HEIGHT)
 
-        guard let newRenderer = Renderer(metalKitView: mtkView, terminal: self.terminal, tty: self.tty) else {
+        tty = TTY(terminal, callRender: { self.renderer.tick() })
+
+        guard let newRenderer = Renderer(metalKitView: mtkView, terminal: terminal, tty: tty) else {
             print("Renderer cannot be initialized")
             return
         }
@@ -69,33 +69,32 @@ class GameViewController: NSViewController {
         renderer.mtkView(mtkView, drawableSizeWillChange: mtkView.drawableSize)
 
         mtkView.delegate = renderer
-        
+
         tty.run()
     }
-    
-    @objc func terminalDataUpdate(_ notification: Notification) {
-        if renderer == nil { return; }
-        renderer.tick();
+
+    @objc func terminalDataUpdate(_: Notification) {
+        if renderer == nil { return }
+        renderer.tick()
     }
-    
+
     override func keyDown(with event: NSEvent) {
         super.keyDown(with: event)
-       
+
         switch event.keyCode {
-        case /* KEY_UP */ 126: self.tty.keyDown("\u{1b}[A"); return;
-        case /* KEY_DOWN */ 125: self.tty.keyDown("\u{1b}[B"); return;
-        case /* KEY_LEFT */ 123: self.tty.keyDown("\u{1b}[D"); return;
-        case /* KEY_RIGHT */ 124: self.tty.keyDown("\u{1b}[C"); return;
-        default: break;
+        case /* KEY_UP */ 126: tty.keyDown("\u{1b}[A"); return;
+        case /* KEY_DOWN */ 125: tty.keyDown("\u{1b}[B"); return;
+        case /* KEY_LEFT */ 123: tty.keyDown("\u{1b}[D"); return;
+        case /* KEY_RIGHT */ 124: tty.keyDown("\u{1b}[C"); return;
+        default: break
         }
-        
-        
+
         if let c: String = event.characters {
-            self.tty.keyDown(c)
+            tty.keyDown(c)
         }
     }
-    
+
     override var acceptsFirstResponder: Bool {
-        return true
+        true
     }
 }
