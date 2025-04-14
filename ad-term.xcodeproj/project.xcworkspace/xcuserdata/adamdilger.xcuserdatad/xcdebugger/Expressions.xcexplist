@@ -4,14 +4,25 @@
    <ContextStates>
       <ContextState
          contextName = "example():termTests.swift">
-      </ContextState>
-      <ContextState
-         contextName = "Terminal.draw():Terminal.swift">
          <PersistentStrings>
             <PersistentString
-               value = "self.buffer.count">
+               value = "c.asciiValue">
+            </PersistentString>
+            <PersistentString
+               value = "t.cells[i].char">
             </PersistentString>
          </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Parser.parseOperatingSystemControl(_:idx:):term.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "input[idx]">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "fill(_:_:_:cursor:width:):Renderer.swift">
       </ContextState>
       <ContextState
          contextName = "closure #1 in TTY.run():TTY.swift">
@@ -22,16 +33,10 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "fill(_:_:_:cursor:width:):Renderer.swift">
-      </ContextState>
-      <ContextState
-         contextName = "Parser.parseLines(lines:):term.swift">
+         contextName = "GameViewController.keyDown(with:):GameViewController.swift">
          <PersistentStrings>
             <PersistentString
-               value = "cells[0].char">
-            </PersistentString>
-            <PersistentString
-               value = "UnicodeScalar(buf[idx])">
+               value = "event.keyCode">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
@@ -52,10 +57,13 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "Parser.parseOperatingSystemControl(_:idx:):term.swift">
+         contextName = "Parser.parseLines(lines:):term.swift">
          <PersistentStrings>
             <PersistentString
-               value = "input[idx]">
+               value = "cells[0].char">
+            </PersistentString>
+            <PersistentString
+               value = "UnicodeScalar(buf[idx])">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
@@ -66,18 +74,18 @@
                value = "t.buf[idx]">
             </PersistentString>
             <PersistentString
-               value = "UnicodeScalar(t.buf[idx])">
+               value = "UnicodeScalar(t.buf[idx - 1])">
             </PersistentString>
             <PersistentString
-               value = "UnicodeScalar(t.buf[idx - 1])">
+               value = "UnicodeScalar(t.buf[idx])">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "GameViewController.keyDown(with:):GameViewController.swift">
+         contextName = "TTerminal.parseIncomingLines(_:):term.swift">
          <PersistentStrings>
             <PersistentString
-               value = "event.keyCode">
+               value = "lines.last">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
@@ -134,6 +142,14 @@
          contextName = "Renderer.tick():Renderer.swift">
       </ContextState>
       <ContextState
+         contextName = "Terminal.draw():Terminal.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "self.buffer.count">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "Terminal.newLine():Terminal.swift">
          <PersistentStrings>
             <PersistentString
@@ -143,14 +159,6 @@
       </ContextState>
       <ContextState
          contextName = "multiline():termTests.swift">
-      </ContextState>
-      <ContextState
-         contextName = "TTerminal.parseIncomingLines(_:):term.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "lines.last">
-            </PersistentString>
-         </PersistentStrings>
       </ContextState>
    </ContextStates>
 </VariablesViewState>

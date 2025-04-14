@@ -14,8 +14,10 @@ class ControlSequenceParser {
     var c1: C1?
     var csi: CSI?
 
+    var questionMark = false
+    var greaterThan = false
+    
     var numCount = 0
-    var digitCount = 0
     var numbers = [0, 0, 0, 0]
 
     enum WhereAmIParsing {
@@ -28,19 +30,21 @@ class ControlSequenceParser {
         case OSC
     }
 
-    func parse(_ input: Data, index: Int) {
+    func parse(_ input: Data, index: Int) -> Int {
         var idx = index
 
         if idx == input.count {
             print("ControlSequenceParser idx overflow")
-            return
+            return index
         }
 
         while idx < input.count {
-            var c = input[idx]
+            let c = input[idx]
 
             if type == .New {
                 if c == chars.ESCAPE {
+                    reset()
+                    
                     idx += 1
                     isParsing = true
                     continue
@@ -61,9 +65,6 @@ class ControlSequenceParser {
                     continue
                 } else { print(".FE ERROR") }
             } else if type == .CSI {
-                var questionMark = false
-                var greaterThan = false
-
                 if c == chars.QUESTION {
                     idx += 1
                     questionMark = true
@@ -77,52 +78,57 @@ class ControlSequenceParser {
                     // end parsing a number
                     idx += 1
                     numCount += 1
-                    digitCount = 0
                     continue
-                } else if c >= 48, c <= 57 {}
-
-                numbers[0] = readNumber(input, idx: &idx)
-                numCount = 1
-
-                if c == chars.SQUARE_BRACKET_L {
-                    c += 1
-                    c1 = .CSI
-                    type = .CSI
-                    continue
-                } else if c == chars.SQUARE_BRACKET_R {
-                    c += 1
-                    c1 = .OSC
-                    type = .OSC
-                    continue
-                } else { print(".FE ERROR") }
+                } else if c >= 48, c <= 57 {
+                    while idx < input.count && input[idx] >= 48 && input[idx] <= 57 {
+                        let v = Int(input[idx]) - 48
+                        numbers[numCount] = (numbers[numCount] * 10) + v
+                        idx += 1
+                    }
+                } else if c >= 0x40 && c <= 0x7E {
+                    // END OF CSI
+                    if questionMark {
+                        csi = switch Int(c) {
+                        case chars.h: .DECSET
+                        case chars.l: .DECRST
+                        default: nil
+                        }
+                    } else {
+                        csi = switch Int(c) {
+                        case chars.A: .CUU
+                        case chars.B: .CUD
+                        case chars.C: .CUF
+                        case chars.D: .CUB
+                        case chars.H: .CUP
+                        case chars.J: .ED
+                        case chars.m: .SGR
+                        default: nil
+                        }
+                    }
+                    
+                    idx += 1
+                    type = .New
+                    
+                    break;
+                }
             }
         }
+        
+        return idx
     }
-
-    func readNumber(_ input: Data, idx: inout Int) -> Int {
-        var numbers = [Int](repeating: 0, count: 10)
-        var count = 0
-
-        let zero = 48
-        let nine = 57
-        while idx < input.count, input[idx] >= zero, input[idx] <= nine {
-            numbers[count] = Int(input[idx]) - zero
-            count += 1
-            idx += 1
-        }
-
-        if count == 0 {
-            return 0
-        }
-
-        var curr = 0
-        var iter = count - 1
-        for i in 0 ..< count {
-            curr += numbers[i] * Int(pow(10.0, Double(iter)))
-            iter -= 1
-        }
-
-        return curr
+    
+    func reset() {
+        isParsing = false
+        type = .New
+        
+        c1 = nil
+        csi = nil
+        
+        questionMark = false
+        greaterThan = false
+        
+        for i in 0..<numbers.count { numbers[i] = 0 }
+        numCount = 0
     }
 
     enum C1 {
@@ -132,15 +138,27 @@ class ControlSequenceParser {
     }
 
     enum CSI {
-        case CUU // Cursor Up
-        case CUD // Cursor Down
-        case CUF // Cursor Forward
-        case CUB // Cursor Back
-        case CUP // Cursor Position
-        case SU // Scroll Up
-        case SD // Scroll Down
-        case SGR // Select Graphics Rendition
-        case DECTCEM_ON // Shows the cursor
-        case DECTCEM_OFF // Hides the cursor
+        /// Cursor Up
+        case CUU
+        /// Cursor Down
+        case CUD
+        /// Cursor Forward
+        case CUF
+        /// Cursor Back
+        case CUB
+        /// Cursor Position
+        case CUP
+        /// Scroll Up
+        case SU
+        /// Scroll Down
+        case SD
+        /// Erase in Display
+        case ED
+        /// Select Graphics Rendition
+        case SGR
+        /// DEC Private Mode Set
+        case DECSET
+        /// DEC Private Mode Reset
+        case DECRST
     }
 }
