@@ -52,7 +52,15 @@ enum chars {
     static let p = 112
     static let q = 113
     static let r = 114
-}
+    static let s = 115
+    static let t = 116
+    static let u = 117
+    static let v = 118
+    static let w = 119
+    static let x = 120
+    static let y = 121
+    static let z = 122
+    }
 
 public struct BufLine {
     public var s: Int
@@ -162,6 +170,7 @@ public class TTerminal {
 
 class Parser {
     var t: TTerminal
+    var controlParser = ControlSequenceParser()
 
     init(terminal: TTerminal) {
         t = terminal
@@ -170,12 +179,22 @@ class Parser {
     func parse(newData: Data) {
         var idx = 0
         while idx < newData.count {
+            if controlParser.isParsing {
+                // we're half way through, keep going!
+                idx = controlParser.parse(newData, index: idx)
+                if controlParser.isParsing == false { parseEscapeCode() }
+                continue
+            }
+            
             let c = newData[idx]
             idx += 1
 
             // loop until either escape code or new line
             if c == chars.ESCAPE {
-                parseEscapeCode(newData, idx: &idx)
+                idx -= 1 // TODO:
+                idx = controlParser.parse(newData, index: idx) // parseEscapeCode(newData, idx: &idx)
+                
+                if controlParser.isParsing == false { parseEscapeCode() }
             } else if c == chars.BELL {
                 // do nothing?
             } else if c == chars.BACKSPACE {
@@ -245,51 +264,23 @@ class Parser {
         }
     }
 
-    func parseEscapeCode(_ input: Data, idx: inout Int) {
-        if idx == input.count {
-            print("CANNOT PARSE ESCAPE CODE")
-            return
-        }
-
-        let c = input[idx]
-        idx += 1
-
-        if c == chars.SQUARE_BRACKET_L {
-            parseControlCode(input, idx: &idx)
-        } else if c == chars.SQUARE_BRACKET_R {
-            parseOperatingSystemControl(input, idx: &idx)
-        } else if c == chars.EQUALS {
-            print("Application Keypad (DECPAM)")
-        } else {
-            print("Unknown escape code: \(Character(UnicodeScalar(c)))")
+    func parseEscapeCode() {
+        let c1 = controlParser.c1
+        
+        switch c1 {
+        case .CSI: parseControlCode()
+        case .OSC: parseOperatingSystemControl()
+        default: print("UNKNOWN")
         }
     }
 
-    func parseControlCode(_ input: Data, idx: inout Int) {
-        var questionMark = false
-        if input[idx] == chars.QUESTION {
-            idx += 1
-            questionMark = true
-        }
-
-        if input[idx] == chars.GREATER_THAN {
-            // unsure
-            idx += 1
-            print("CSI >")
-        }
-
-        var numbers = [readNumber(input, idx: &idx), 0, 0, 0]
-        var numCount = 1
-
-        while input[idx] == chars.SEMI_COLON {
-            idx += 1
-            numbers[numCount] = readNumber(input, idx: &idx)
-            numCount += 1
-        }
+    func parseControlCode() {
+        let questionMark = controlParser.questionMark
+        let numbers = controlParser.numbers
+        let csi = controlParser.csi
 
         if questionMark {
-            if input[idx] == chars.h {
-                idx += 1
+            if csi == .DECSET {
                 switch numbers[0] {
                 case 1049:
                     t.alternateCells = t.cells
@@ -306,10 +297,9 @@ class Parser {
                 case 25:
                     print("TODO: Shows the cursor")
                 default:
-                    print("Unknown CSI number for ? h: \(numbers[0])")
+                    print("Unknown DECSET number for ? h: \(numbers[0])")
                 }
-            } else if input[idx] == chars.l {
-                idx += 1
+            } else if csi == .DECRST {
                 switch numbers[0] {
                 case 1049:
                     guard let pen = t.alternatePen, let cells = t.alternateCells, let cursor = t.alternateCursor else {
@@ -328,19 +318,15 @@ class Parser {
                 case 25:
                     print("TODO: Hide the cursor")
                 default:
-                    print("Unknown CSI number for ? h: \(numbers[0])")
+                    print("Unknown DECRST number for ? h: \(numbers[0])")
                 }
-            } else {
-                print("Unknown CSI from question mark: \(Character(UnicodeScalar(input[idx])))")
-                idx += 1
             }
 
             return
         }
 
-        if input[idx] == chars.m {
-            idx += 1
-            for ni in 0 ..< numCount {
+        if csi == .SGR {
+            for ni in 0 ..< controlParser.numCount {
                 let number = numbers[ni]
                 switch number {
                 case 30 ... 37:
@@ -359,24 +345,20 @@ class Parser {
                     print("Unknown CSI number for m: \(number)")
                 }
             }
-        } else if input[idx] == chars.r {
-            idx += 1
+        } else if csi == .DECSTBM {
             t.scrollTop = numbers[0] - 1
             t.scrollBottom = numbers[1] - 1
             print("updating scroll region: \(numbers)")
-        } else if input[idx] == chars.C {
-            idx += 1
+        } else if csi == .CUF {
             print("moving cursor \(numbers[0]) forward")
             t.cursor.x += numbers[0]
-        } else if input[idx] == chars.H {
-            idx += 1
+        } else if csi == .CUP {
             let n = numbers[0] == 0 ? 1 : numbers[0]
             let m = numbers[1] == 0 ? 1 : numbers[1]
             t.cursor.y = n - 1
             t.cursor.x = m - 1
             print("moving cursor to \(n):\(m)")
-        } else if input[idx] == chars.J {
-            idx += 1
+        } else if csi == .ED {
             switch numbers[0] {
             case 0:
                 print("0J")
@@ -394,10 +376,9 @@ class Parser {
                     clearRow(y: i)
                 }
             default:
-                print("Unknown CSI number for J: \(numbers[0])")
+                print("Unknown number for J: \(numbers[0])")
             }
-        } else if input[idx] == chars.K {
-            idx += 1
+        } else if csi == .EL {
             let n = numbers[0]
             if n == 0 {
                 print("[\(n)K -- y: \(t.cursor.y) | x: \(t.cursor.x) to WIDTH")
@@ -409,7 +390,7 @@ class Parser {
             } else if n == 1 {
                 print("[\(n)K -- 0 to \(t.cursor.x)")
                 // If n is 1, clear from cursor to beginning of the line.
-                for c in 0 ..< idx {
+                for c in 0 ..< t.cursor.x {
                     clearCell(cell: &t.cells[c + (t.cursor.y * t.WIDTH)])
                 }
             } else {
@@ -419,61 +400,38 @@ class Parser {
                     clearCell(cell: &t.cells[c + (t.cursor.y * t.WIDTH)])
                 }
             }
-
-        } else if input[idx] == chars.L {
-            idx += 1
+        } else if csi == .IL {
             let n = numbers[0] == 0 ? 1 : numbers[0]
 
             for _ in 0 ..< n {
                 insertLine()
             }
-        } else if input[idx] == chars.M {
-            idx += 1
+        } else if csi == .DL {
             let n = numbers[0] == 0 ? 1 : numbers[0]
 
             for _ in 0 ..< n {
                 deleteLine()
             }
-        } else if input[idx] == chars.P {
-            idx += 1
+        } else if csi == .DCH {
             // delete chars
             print("Deleting \(numbers[0]) chars")
             let yOffset = t.cursor.y * t.WIDTH
             for i in t.cursor.x ..< t.WIDTH {
                 t.cells[yOffset + i] = t.cells[yOffset + i + numbers[0]]
             }
+        } else if csi == .PRIMARY_DA {
+            print("TODO: Primary DA")
+        } else if csi == .DSR {
+            print("TODO: Device Status Report")
+        } else if csi == .WINDOW_MANIPULATION {
+            print("TODO: Window Manipulation")
         } else {
-            print("Unknown control code: \(Character(UnicodeScalar(input[idx]))) : \(numbers)")
-            idx += 1
+            print("UNKNOWN CSI")
         }
     }
 
-    func parseOperatingSystemControl(_ input: Data, idx: inout Int) {
-        var numbers = [readNumber(input, idx: &idx), 0, 0, 0]
-        var numCount = 1
-
-        while input[idx] == chars.SEMI_COLON {
-            idx += 1
-            numbers[numCount] = readNumber(input, idx: &idx)
-            numCount += 1
-        }
-
-        var questionMark = false
-        if input[idx] == chars.QUESTION {
-            idx += 1
-            questionMark = true
-        }
-
-        if questionMark {
-            print("todo: send back appropriate colour")
-        }
-
-        if input[idx] == chars.BELL {
-            idx += 1
-            print("OSC ] \(numbers)")
-        } else {
-            print("unknown osc \(UnicodeScalar(input[idx]))")
-        }
+    func parseOperatingSystemControl() {
+        debugPrint(controlParser.c1!)
     }
 
     func readNumber(_ input: Data, idx: inout Int) -> Int {

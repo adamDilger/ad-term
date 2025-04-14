@@ -23,34 +23,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "1D4EE158-DDBF-4805-A101-8DCE8620EFC2"
+            uuid = "0AD7D393-DEF7-4DD1-AB4D-842AF3A5E39B"
             shouldBeEnabled = "No"
-            condition = "idx &gt; 1010"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "term/Sources/term/term.swift"
+            filePath = "term/Sources/term/ControlSequenceParser.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "477"
-            endingLineNumber = "477"
-            landmarkName = "parseOperatingSystemControl(_:idx:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "9BEEBF9D-D06B-4589-A7BE-13928F12CFE8"
-            shouldBeEnabled = "No"
-            condition = "idx == newData.count"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "term/Sources/term/term.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "180"
-            endingLineNumber = "180"
-            landmarkName = "parse(newData:)"
+            startingLineNumber = "43"
+            endingLineNumber = "43"
+            landmarkName = "parse(_:index:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

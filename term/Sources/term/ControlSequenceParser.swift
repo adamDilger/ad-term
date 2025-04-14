@@ -17,11 +17,12 @@ class ControlSequenceParser {
     var questionMark = false
     var greaterThan = false
     
-    var numCount = 0
-    var numbers = [0, 0, 0, 0]
+    var numCount = 1
+    var numbers = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     enum WhereAmIParsing {
         case New
+        case Done
         case FE
 
         case CSI
@@ -39,31 +40,41 @@ class ControlSequenceParser {
         }
 
         while idx < input.count {
+            if type == .Done {
+                type = .New
+                isParsing = false
+                break;
+            }
+            
             let c = input[idx]
 
             if type == .New {
                 if c == chars.ESCAPE {
                     reset()
-                    
                     idx += 1
                     isParsing = true
-                    continue
                 } else if c >= 64 || c <= 95 {
                     type = .FE
-                    continue
-                } else { print(".New ERROR") }
+                } else {
+                    print(".New ERROR")
+                }
             } else if type == .FE {
+                idx += 1
+                
                 if c == chars.SQUARE_BRACKET_L {
-                    idx += 1
                     c1 = .CSI
                     type = .CSI
-                    continue
+                } else if c == chars.EQUALS {
+                    c1 = .DECPAM
+                    type = .New
                 } else if c == chars.SQUARE_BRACKET_R {
-                    idx += 1
                     c1 = .OSC
                     type = .OSC
-                    continue
-                } else { print(".FE ERROR") }
+                }
+                else {
+                    print(".FE ERROR: \(Character(UnicodeScalar(c)))")
+                    type = .Done
+                }
             } else if type == .CSI {
                 if c == chars.QUESTION {
                     idx += 1
@@ -82,7 +93,7 @@ class ControlSequenceParser {
                 } else if c >= 48, c <= 57 {
                     while idx < input.count && input[idx] >= 48 && input[idx] <= 57 {
                         let v = Int(input[idx]) - 48
-                        numbers[numCount] = (numbers[numCount] * 10) + v
+                        numbers[numCount - 1] = (numbers[numCount - 1] * 10) + v
                         idx += 1
                     }
                 } else if c >= 0x40 && c <= 0x7E {
@@ -100,17 +111,53 @@ class ControlSequenceParser {
                         case chars.C: .CUF
                         case chars.D: .CUB
                         case chars.H: .CUP
+                        case chars.L: .IL
+                        case chars.K: .EL
                         case chars.J: .ED
+                        case chars.c: .PRIMARY_DA
                         case chars.m: .SGR
+                        case chars.n: .DSR
+                        case chars.r: .DECSTBM
+                        case chars.t: .WINDOW_MANIPULATION
                         default: nil
                         }
                     }
                     
                     idx += 1
-                    type = .New
-                    
+                    type = .Done
                     break;
+                } else {
+                    idx += 1
+                    print("UNKNOWN CSI: \(Character(UnicodeScalar(c)))")
                 }
+            } else if type == .OSC {
+                // idx += 1
+                print("OSC CHAR: \((Character(UnicodeScalar(c))))")
+                
+                if c == chars.SEMI_COLON {
+                    // end parsing a number
+                    idx += 1
+                    numCount += 1
+                    continue
+                } else if c >= 48, c <= 57 {
+                    while idx < input.count && input[idx] >= 48 && input[idx] <= 57 {
+                        let v = Int(input[idx]) - 48
+                        numbers[numCount - 1] = (numbers[numCount - 1] * 10) + v
+                        idx += 1
+                    }
+                } else if c == chars.BELL {
+                    idx += 1
+                    type = .Done
+                } else {
+                    idx += 1
+                    print("Consuming OSC char: \(Character(UnicodeScalar(c)))")
+                }
+            } else {
+                print("BREAKING UNKNOWN NEXT CHAR: \(Character(UnicodeScalar(c)))")
+                
+                idx += 1
+                type = .Done
+                break;
             }
         }
         
@@ -128,13 +175,18 @@ class ControlSequenceParser {
         greaterThan = false
         
         for i in 0..<numbers.count { numbers[i] = 0 }
-        numCount = 0
+        numCount = 1
     }
 
     enum C1 {
-        case CSI // Control Sequence Introducer
-        case ST // String Terminator
-        case OSC // Operating System Command
+        /// Control Sequence Introducer
+        case CSI
+        /// String Terminator
+        case ST
+        /// Operating System Command
+        case OSC
+        /// Application Keypad
+        case DECPAM
     }
 
     enum CSI {
@@ -154,11 +206,27 @@ class ControlSequenceParser {
         case SD
         /// Erase in Display
         case ED
+        /// Erase in Line
+        case EL
+        /// Insert Line
+        case IL
+        /// Delete Line
+        case DL
+        /// Delete Character
+        case DCH
+        /// Device Status Report
+        case DSR
         /// Select Graphics Rendition
         case SGR
         /// DEC Private Mode Set
         case DECSET
         /// DEC Private Mode Reset
         case DECRST
+        /// Scrolling region
+        case DECSTBM
+        /// Window manipulation (t)
+        case WINDOW_MANIPULATION
+        /// primary DA
+        case PRIMARY_DA
     }
 }
