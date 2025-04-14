@@ -23,22 +23,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "CADFA651-EC16-4DC2-8980-2569D06975C5"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "term/Sources/term/term.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "438"
-            endingLineNumber = "438"
-            landmarkName = "parseControlCode(_:idx:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "1D4EE158-DDBF-4805-A101-8DCE8620EFC2"
             shouldBeEnabled = "No"
             condition = "idx &gt; 1010"
@@ -49,7 +33,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "477"
             endingLineNumber = "477"
-            landmarkName = "readNumber(_:idx:)"
+            landmarkName = "parseOperatingSystemControl(_:idx:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -67,22 +51,6 @@
             startingLineNumber = "180"
             endingLineNumber = "180"
             landmarkName = "parse(newData:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "720027E0-9627-44FA-881A-2EA491D80EE5"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "term/Sources/term/term.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "252"
-            endingLineNumber = "252"
-            landmarkName = "parseEscapeCode(_:idx:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
