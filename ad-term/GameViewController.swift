@@ -55,7 +55,10 @@ class GameViewController: NSViewController {
         let HEIGHT = _d
 
         let buf = Data()
-        terminal = TTerminal(buffer: buf)
+        terminal = TTerminal(buffer: buf, reporter: { s in
+            print("Reporting: \(s)")
+            self.tty.keyDown(s)
+        })
         terminal.resize(width: WIDTH, height: HEIGHT)
 
         tty = TTY(terminal, callRender: { self.renderer.tick() })

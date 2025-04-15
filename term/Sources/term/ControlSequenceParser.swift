@@ -40,12 +40,6 @@ class ControlSequenceParser {
         }
 
         while idx < input.count {
-            if type == .Done {
-                type = .New
-                isParsing = false
-                break;
-            }
-            
             let c = input[idx]
 
             if type == .New {
@@ -125,7 +119,6 @@ class ControlSequenceParser {
                     
                     idx += 1
                     type = .Done
-                    break;
                 } else {
                     idx += 1
                     print("UNKNOWN CSI: \(Character(UnicodeScalar(c)))")
@@ -148,6 +141,11 @@ class ControlSequenceParser {
                 } else if c == chars.BELL {
                     idx += 1
                     type = .Done
+                } else if c == chars.QUESTION {
+                    // unsure if this is OK... as there could be more than one question mark in the code. I can't see any example of that in the OSC part of
+                    // the xterm specs though
+                    idx += 1
+                    questionMark = true
                 } else {
                     idx += 1
                     print("Consuming OSC char: \(Character(UnicodeScalar(c)))")
@@ -157,6 +155,11 @@ class ControlSequenceParser {
                 
                 idx += 1
                 type = .Done
+            }
+            
+            if type == .Done {
+                type = .New
+                isParsing = false
                 break;
             }
         }

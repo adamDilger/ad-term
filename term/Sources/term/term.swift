@@ -95,50 +95,55 @@ public struct Pen {
     var inverted = false
 }
 
+let DEFAULT_FG_COLOR = 37
+let DEFAULT_BG_COLOR = 40
+
 public class TTerminal {
     public var WIDTH = 0
     public var HEIGHT = 0
-
+    
     public var buf: Data
     var lines: [BufLine] = []
     var currentLineIndex: Int?
-
+    
     public var pen = Pen()
     public var cursor = Point(x: 0, y: 0)
-
+    
     var scrollTop = 0
     var scrollBottom = 0
-
+    
     public var cells: [Cell] = []
-
+    
     var alternateCells: [Cell]?
     var alternateCursor: Point?
     var alternatePen: Pen?
-
+    
     private var parser: Parser!
-
-    public init(buffer: Data) {
+    private var report: (String) -> ()
+    
+    public init(buffer: Data, reporter: @escaping (String) -> ()) {
         buf = buffer
+        report = reporter
         parser = Parser(terminal: self)
     }
-
+    
     public func resize(width: Int, height: Int) {
         WIDTH = width
         HEIGHT = height
         scrollBottom = height - 1
         cells = [Cell](repeating: Cell(), count: width * height)
-
+        
         // TODO: redraw
         cursor.x = 0
         cursor.y = 0
-
+        
         // TODO: shouldn't parse the entire buffer, maybe the last so many lines?
         parser.parse(newData: buf)
     }
-
+    
     public func parseIncomingLines(_ incoming: Data) {
         if incoming.count == 0 { return }
-
+        
         if currentLineIndex == nil {
             if let ll = lines.last {
                 lines.append(BufLine(s: ll.e + 1, e: ll.e))
@@ -147,24 +152,28 @@ public class TTerminal {
             }
             currentLineIndex = lines.count - 1
         }
-
+        
         for (i, c) in incoming.enumerated() {
             let b = lines.endIndex - 1
             lines[b].e += 1
-
+            
             if c == Character("\n").asciiValue {
                 if i == incoming.endIndex - 1 {
                     // no more data, stop creating lines
                     currentLineIndex = nil
                     break
                 }
-
+                
                 lines.append(BufLine(s: lines[b].s + 1, e: lines[b].e))
             }
         }
-
+        
         buf.append(incoming)
         parser.parse(newData: incoming)
+    }
+    
+    func replyToShell(_ s: String) {
+        self.report(s)
     }
 }
 
@@ -192,7 +201,7 @@ class Parser {
             // loop until either escape code or new line
             if c == chars.ESCAPE {
                 idx -= 1 // TODO:
-                idx = controlParser.parse(newData, index: idx) // parseEscapeCode(newData, idx: &idx)
+                idx = controlParser.parse(newData, index: idx)
                 
                 if controlParser.isParsing == false { parseEscapeCode() }
             } else if c == chars.BELL {
@@ -211,6 +220,7 @@ class Parser {
                 t.cells[ci].char = c
                 t.cells[ci].fgColor = t.pen.fgColor
                 t.cells[ci].bgColor = t.pen.bgColor
+                t.cells[ci].inverted = t.pen.inverted
                 incX()
             }
         }
@@ -251,8 +261,8 @@ class Parser {
 
     func clearCell(cell: inout Cell) {
         cell.char = nil
-        cell.bgColor = 40
-        cell.fgColor = 37
+        cell.bgColor = t.pen.bgColor
+        cell.fgColor = t.pen.fgColor
         cell.inverted = false
     }
 
@@ -289,8 +299,8 @@ class Parser {
 
                     t.cells = [Cell](repeating: Cell(), count: t.WIDTH * t.HEIGHT)
                     t.pen = Pen()
-                    t.pen.fgColor = 37
-                    t.pen.bgColor = 40
+                    t.pen.fgColor = DEFAULT_FG_COLOR
+                    t.pen.bgColor = DEFAULT_BG_COLOR
                     t.cursor = Point(x: 0, y: 0)
                 case 12:
                     print("Start Blinking Cursor (att610)")
@@ -329,18 +339,29 @@ class Parser {
             for ni in 0 ..< controlParser.numCount {
                 let number = numbers[ni]
                 switch number {
+                case 0:
+                    print("RESETTING ALL SGR \(number)")
+                    t.pen.fgColor = DEFAULT_FG_COLOR
+                    t.pen.bgColor = DEFAULT_BG_COLOR
+                    t.pen.inverted = false
+                case 7:
+                    print("setting inverted pen")
+                    t.pen.inverted = true
+                case 27:
+                    print("setting inverted pen to false")
+                    t.pen.inverted = false
                 case 30 ... 37:
                     print("setting FG colour to \(number)")
                     t.pen.fgColor = number
                 case 39:
                     print("setting FG colour to default: 37")
-                    t.pen.fgColor = 37 /* default: white */
+                    t.pen.fgColor = DEFAULT_FG_COLOR
                 case 40 ... 47:
                     print("setting BG colour to \(number)")
                     t.pen.bgColor = number
                 case 49:
                     print("setting BG colour to default: 40")
-                    t.pen.bgColor = 40 /* default: black */
+                    t.pen.bgColor = DEFAULT_BG_COLOR
                 default:
                     print("Unknown CSI number for m: \(number)")
                 }
@@ -380,24 +401,26 @@ class Parser {
             }
         } else if csi == .EL {
             let n = numbers[0]
+            let yOffset = t.cursor.y * t.WIDTH
+            
             if n == 0 {
                 print("[\(n)K -- y: \(t.cursor.y) | x: \(t.cursor.x) to WIDTH")
                 // If n is 0 (or missing), clear from cursor to the end of the line.
                 // for c in x..<WIDTH { self.cells[c + (ay * WIDTH)].char = nil }
                 for c in t.cursor.x ..< t.WIDTH {
-                    clearCell(cell: &t.cells[c + (t.cursor.y * t.WIDTH)])
+                    clearCell(cell: &t.cells[c + yOffset])
                 }
             } else if n == 1 {
                 print("[\(n)K -- 0 to \(t.cursor.x)")
                 // If n is 1, clear from cursor to beginning of the line.
                 for c in 0 ..< t.cursor.x {
-                    clearCell(cell: &t.cells[c + (t.cursor.y * t.WIDTH)])
+                    clearCell(cell: &t.cells[c + yOffset])
                 }
             } else {
                 print("[\(n)K -- CLEAR")
                 // If n is 2, clear entire line. Cursor position does not change.
                 for c in 0 ..< t.WIDTH {
-                    clearCell(cell: &t.cells[c + (t.cursor.y * t.WIDTH)])
+                    clearCell(cell: &t.cells[c + yOffset])
                 }
             }
         } else if csi == .IL {
@@ -422,9 +445,12 @@ class Parser {
         } else if csi == .PRIMARY_DA {
             print("TODO: Primary DA")
         } else if csi == .DSR {
-            print("TODO: Device Status Report")
+            print("TODO: Device Status Report: \(numbers[0])")
+            if numbers[0] == 6 {
+                t.replyToShell("\u{1b}[\(t.cursor.y + 1);\(t.cursor.x + 1)R")
+            }
         } else if csi == .WINDOW_MANIPULATION {
-            print("TODO: Window Manipulation")
+            print("TODO: Window Manipulation: \(numbers)")
         } else {
             print("UNKNOWN CSI")
         }
@@ -432,6 +458,11 @@ class Parser {
 
     func parseOperatingSystemControl() {
         debugPrint(controlParser.c1!)
+        if controlParser.numbers[0] == 10 {
+            t.replyToShell("\u{1b}]10;rgb:f/ff/fff\u{1b}\\");
+        } else if controlParser.numbers[0] == 11 {
+            t.replyToShell("\u{1b}]11;rgb:f/ff/fff\u{1b}\\");
+        }
     }
 
     func readNumber(_ input: Data, idx: inout Int) -> Int {
